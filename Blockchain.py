@@ -83,6 +83,7 @@ class Blockchain:
     def resolve(self):
         """
         get longest header and compute the longest chain through recurrence
+        update balance map
         return longest chain through recurrence
         """
         pass
