@@ -17,39 +17,42 @@ class MerkleTree():
         return digest
 
     def build(self):
-        merkel_chain = []
-        merkel_chain.append(self.past_hashes)
-        while (math.log2(len(merkel_chain[0])).is_integer()) == False:
-            merkel_chain[0].append(None)
+        if len(self.past_transactions) > 0:
+            merkle_chain = []
+            merkle_chain.append(self.past_hashes)
+            while (math.log2(len(merkle_chain[0])).is_integer()) == False:
+                merkle_chain[0].append(None)
 
-        n = len(merkel_chain[0])
-        n_level = math.ceil(math.log2(n))
-        cycle = 0
-        while n != 1:
+            n = len(merkle_chain[0])
+            n_level = math.ceil(math.log2(n))
+            cycle = 0
+            while n != 1:
 
-            level_ = []
-            for i in range(0, n, 2):
-                if merkel_chain[cycle][i+1] == None:
-                    to_hash = str(merkel_chain[cycle][i])
-                    digest = hashlib.sha256(to_hash.encode()).hexdigest()
-                    level_.append(digest)
-                if merkel_chain[cycle][i] == None:
-                    level_.append(None)
-                else:
-                    to_hash = str(merkel_chain[cycle][i]) + \
-                        str(merkel_chain[cycle][i+1])
-                    digest = hashlib.sha256(to_hash.encode()).hexdigest()
-                    level_.append(digest)
-            cycle += 1
-            merkel_chain.append(level_)
-            n = math.ceil(n/2)
-        self.merkel_chain = merkel_chain
+                level_ = []
+                for i in range(0, n, 2):
+                    if merkle_chain[cycle][i+1] == None:
+                        to_hash = str(merkle_chain[cycle][i])
+                        digest = hashlib.sha256(to_hash.encode()).hexdigest()
+                        level_.append(digest)
+                    if merkle_chain[cycle][i] == None:
+                        level_.append(None)
+                    else:
+                        to_hash = str(merkle_chain[cycle][i]) + \
+                            str(merkle_chain[cycle][i+1])
+                        digest = hashlib.sha256(to_hash.encode()).hexdigest()
+                        level_.append(digest)
+                cycle += 1
+                merkle_chain.append(level_)
+                n = math.ceil(n/2)
+            self.merkle_chain = merkle_chain
+        else:
+            self.merkle_chain = []
 
     def get_root(self):
-        return self.merkel_chain[-1]
+        return self.merkle_chain[-1] if self.merkle_chain else None
 
     def get_leaves(self):
-        return self.merkel_chain[0]
+        return self.merkle_chain[0] if self.merkle_chain else None
 
     def get_min_nodes(self, transaction):
         idx = self.past_transactions.index(transaction)
@@ -59,20 +62,20 @@ class MerkleTree():
         if idx % 2 == 0:
             # means left node
             state = "left"
-            neighbour = self.merkel_chain[0][idx+1]
+            neighbour = self.merkle_chain[0][idx+1]
         else:
-            neighbour = self.merkel_chain[0][idx-1]
+            neighbour = self.merkle_chain[0][idx-1]
             state = "right"
         level = 1
         idx = idx//2
-        while level != len(self.merkel_chain) - 1:
+        while level != len(self.merkle_chain) - 1:
             if idx % 2 == 0:
                 # My node is on the left, the one being appended is on the right
                 state = "Right"
-                nop = self.merkel_chain[level][idx+1]
+                nop = self.merkle_chain[level][idx+1]
             else:
                 # my node is on the right, the one being appended is on the left
-                nop = self.merkel_chain[level][idx-1]
+                nop = self.merkle_chain[level][idx-1]
                 state = "Left"
             nodes.append([nop, state])
             level += 1
