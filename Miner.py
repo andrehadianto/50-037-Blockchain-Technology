@@ -5,10 +5,11 @@ import random
 class Miner:
     new_block_queue = []
 
-    def __init__(self, miner_id, blockchain):
+    def __init__(self, miner_id, blockchain, t_list):
         self.miner_id = miner_id
         self.blockchain = blockchain
-        self.trans_pool = []  # will be updated by MinerApp. SPVApp will broadcast to MinerApp
+        # self.trans_pool = []  # will be updated by MinerApp. SPVApp will broadcast to MinerApp
+        self.trans_pool = t_list
         self.isMining = False
 
     def found_new_block(self, block):
@@ -41,7 +42,11 @@ class Miner:
         ## GENERATE NONCE ##
         new_block = Block(
             list_of_trans, self.blockchain.longest_header, self.miner_id)
+        counter = 0
         while True:
+            if counter % 100000 == 0:
+                print("attempt:", counter)
+            counter+= 1
             if Miner.new_block_queue:
                 return "receive new block"
             generate_nonce = str(random.randint(0, 300000))
@@ -52,6 +57,9 @@ class Miner:
             # try:
             if self.blockchain.verify_pow(digest) and self.blockchain.validate_block(new_block):
                 self.blockchain.add_block(new_block)
+                for trans in list_of_trans:
+                    if trans in self.trans_pool:
+                        self.trans_pool.remove(trans)
                 return new_block
             # except Exception as e:
             #     print("error: ", e)

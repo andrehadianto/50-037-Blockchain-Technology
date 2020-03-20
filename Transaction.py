@@ -16,6 +16,7 @@ class Transaction(object):
         self.amount = amount
         self.comment = comment
         self.signature = None
+        self.timestamp = int(time.time())
 
     def __eq__(self, transaction):
         return True if self.sender == transaction.sender and self.receiver == transaction.receiver and self.amount == transaction.amount else False
@@ -31,8 +32,16 @@ class Transaction(object):
         props["sender"] = self.sender
         props["amount"] = self.amount
         props["comment"] = self.comment
+        props["timestamp"] = self.timestamp
         return cbor.dumps(props)
-
+    # def dictionary(self):
+    #     props = {}
+    #     props["receiver"] = self.receiver
+    #     props["sender"] = self.sender
+    #     props["amount"] = self.amount
+    #     props["comment"] = self.comment
+    #     props["timestamp"] = self.timestamp
+    #     return props
     @classmethod
     def deserialize(cls, js_string):
         obj = json.loads(js_string)
