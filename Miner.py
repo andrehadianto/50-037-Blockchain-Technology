@@ -1,4 +1,6 @@
 import hashlib
+from Block import Block
+import random
 
 class Miner:
     new_block_queue = []
@@ -9,7 +11,7 @@ class Miner:
         self.trans_pool = []  # will be updated by MinerApp. SPVApp will broadcast to MinerApp
         self.isMining = False
 
-    def found_new_block(self,block):
+    def found_new_block(self, block):
         Miner.new_block_queue.append(block)
 
     def start_mining(self):
@@ -17,27 +19,41 @@ class Miner:
         if have transaction, take transaction
         else keep mining
         """
-        self.isMining = True
-        while self.isMining:
-            ## RECEIVE NEW ANNOUNCEMENT ##
-            for block in Miner.new_block_queue:
-                if self.blockchain.verify_pow(hashlib.sha256(block.serialize()).hexdigest()):
-                    self.blockchain.add_block(block)
-            list_of_trans = []
+        # while self.isMining:
+        ## RECEIVE NEW ANNOUNCEMENT ##
+        for block in Miner.new_block_queue:
+            to_hash = block.serialize()
+            digest = hashlib.sha256(to_hash).hexdigest()
+            if self.blockchain.verify_pow(digest) and self.blockchain.validate_block(block):
+                self.blockchain.add_block(block)
+            Miner.new_block_queue.remove(block)
+        list_of_trans = []
+        bal_map = self.blockchain.blockchain_graph[self.blockchain.longest_header]["balance_map"]
+        ## COLLECT VALID TRANSACTIONS ##
+        if len(self.trans_pool) > 0:
             for trans in self.trans_pool:
-                # TODO: append selected trans from pool to list_of_trans
-                # TODO: check if transaction in trans_pool is valid
-                # TODO: check if account related to transaction has enough balance
-                pass
+                if bal_map[trans.sender] - trans.amount > 0:
+                    list_of_trans.append(trans)
+                else:
+                    print("Insufficient Balance")
+                if len(list_of_trans) > 3:
+                    break
+        ## GENERATE NONCE ##
+        new_block = Block(
+            list_of_trans, self.blockchain.longest_header, self.miner_id)
+        while True:
+            if Miner.new_block_queue:
+                return "receive new block"
+            generate_nonce = str(random.randint(0, 300000))
+            new_block.header['nonce'] = generate_nonce
+            to_hash = new_block.serialize()
+            digest = hashlib.sha256(to_hash).hexdigest()
+            ## TRY ADDING BLOCK TO MINER'S BLOCKCHAIN ##
+            # try:
+            if self.blockchain.verify_pow(digest) and self.blockchain.validate_block(new_block):
+                self.blockchain.add_block(new_block)
+                return new_block
+            # except Exception as e:
+            #     print("error: ", e)
+            #     return "error"
 
-            new_block = Block(list_of_trans, self.blockchain.longest_header, self.miner_id)
-            while not Miner.new_block_queue: # noe
-                # TODO: announce longest header
-                pass
-
-
-
-
-
-
-# new block queue update, must be an API call from MinerApp. Calling this API will update the new_block_queue in the Miner class
