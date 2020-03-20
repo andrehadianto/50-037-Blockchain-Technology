@@ -3,23 +3,15 @@ import time
 import hashlib
 import cbor
 import random
+import copy
 
 
 class Blockchain:
-    # TARGET = {
-    #    1: b'\x05' * 2 + b'\xff' * 254,
-    #    2: b'\x00' * 2 + b'\x99' * 252,
-    #    3: b'\x00' * 2 + b'\x66' * 2 + b'\xff' * 250
-    # }
+    MAX_TARGET = 2.0247377111333645e+72
 
-    def __init__(self):
-        self.ratio = 1
-        self.TARGET = 0x000fff0000000000000000000000000000000000000000000000000000000000
-        #self.new_target = (self.TARGET * self.ratio)
-
-        self.difficulty = 1
-        self.TARGET = b'\x00' + b'\x99' * self.difficulty + \
-            b'\xaa' * (256 - self.difficulty-1)
+    def __init__(self, sample1):
+        self.TARGET = 1.188913362042147e+72
+        self.sample1 = sample1
         self.blockchain_graph = {}
         self.longest_chain = []
         self.longest_header = None
@@ -31,30 +23,20 @@ class Blockchain:
         """
         genesis_block = Block([], "i am genesis", None)
         counter = 0
-        while True:
-            if counter % 10 == 0:
-                print(counter)
-            nonce = str(random.randint(0, 300000))
-            genesis_block.set_nonce(nonce)
-            to_hash = genesis_block.serialize()
-            digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
-            if self.verify_pow(digest):
-                break
-            counter += 1
+        nonce = str(random.randint(0, 300000))
+        genesis_block.set_nonce(nonce)
+        to_hash = genesis_block.serialize()
+        digest = hashlib.sha256(to_hash).hexdigest()
         self.blockchain_graph[digest] = {
             "children": [],
             "height": 0,
             "block": genesis_block,
-            "balance_map": {}
+            "balance_map": {self.sample1: 1000}
         }
         self.longest_header = digest
 
     def verify_pow(self, digest):
-        if self.difficulty < 1:
-            self.difficulty = 1
-        if self.difficulty > 256:
-            self.difficulty = 256
-        if digest < self.TARGET.hex():
+        if int('0x'+digest, 0) < self.TARGET:
             return True
         return False
 
@@ -68,11 +50,14 @@ class Blockchain:
             return False
         ## CHECK FOR DUPLICATE TRANSACTIONS ##
         for trans in block.merkle_tree.past_transactions:
-            # transactions from the added block's parent all the way to the genesis.
             for block_ in self.create_chain_to_parent_block(block):
-                if trans in block_.merkle_tree.past_transactions:
-                    return False
+                for trans_ in block_.merkle_tree.past_transactions:
+                    if trans.serialize() == trans_.serialize():
+                        return False
         return True
+
+    def get_node_balance_map(self, digest):
+        return self.blockchain_graph[digest]["balance_map"]
 
     def add_block(self, block):
         digest = block.hash_header()
@@ -81,32 +66,31 @@ class Blockchain:
         self.blockchain_graph[block.get_header()["prev_header"]]["children"].append(
             digest)  # updating children of the parent node
         ## UPDATE BALANCE MAP ##
-        prev_balance_state = self.blockchain_graph[block.get_header(
-        )["prev_header"]]["balance_map"]  # get previous balance map
-        prev_balance_state[block.miner_id] = prev_balance_state.get(
+        new_balance_map = copy.deepcopy(
+            self.get_node_balance_map(block.get_header()["prev_header"]))
+        new_balance_map[block.miner_id] = new_balance_map.get(
             block.miner_id, 0) + 100  # change to coins per block
         for txn in block.merkle_tree.past_transactions:  # updating balance from transaction
-            prev_balance_state[txn["sender"]] = prev_balance_state.get(
-                txn["sender"], 0) - txn["amount"]
-            prev_balance_state[txn["receiver"]] = prev_balance_state.get(
-                txn["receiver"], 0) + txn["amount"]
-        new_balance_map = prev_balance_state
+            new_balance_map[txn.sender] = new_balance_map.get(
+                txn.sender, 0) - txn.amount
+            new_balance_map[txn.receiver] = new_balance_map.get(
+                txn.receiver, 0) + txn.amount
         for bal in new_balance_map.values():
             if bal < 0:
                 return "Insufficient balance"
         ## UPDATE DIFFICULTY ##
-        if block.get_header()["timestamp"] - self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"] > 5:
-            print("getting easier", self.difficulty)
-            self.difficulty -= 1
-            self.TARGET = b'\x00' + b'\x99' * self.difficulty + \
-                b'\xaa' * (256 - self.difficulty-1)
-            print(self.TARGET[0:50])
-        elif block.get_header()["timestamp"] - self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"] < 2:
-            print("getting harder", self.difficulty)
-            self.difficulty += 1
-            self.TARGET = b'\x00' + b'\x99' * self.difficulty + \
-                b'\xaa' * (256 - self.difficulty-1)
-            print(self.TARGET[0:50])
+        expected = 3.0
+        time_diff = block.get_header()["timestamp"] - self.blockchain_graph[block.get_header()[
+            "prev_header"]]["block"].get_header()["timestamp"]
+        ratio = float(time_diff/expected)
+        if ratio > 2.0:
+            ratio = 1.5
+        if ratio < 0.5:
+            ratio = 0.9
+        self.TARGET *= ratio
+        print("new target is : ", self.TARGET)
+        if self.TARGET > Blockchain.MAX_TARGET:
+            self.TARGET = Blockchain.MAX_TARGET
         ## UPDATE BLOCKCHAIN ##
         self.blockchain_graph[digest] = {"children": [], "height": prev_level +
                                          1, "block": block, "balance_map": new_balance_map}  # creating new node
@@ -114,12 +98,16 @@ class Blockchain:
 
     def create_chain_to_parent_block(self, block):
         block_list = []
-        while True:
-            parent_node = self.blockchain_graph[block.get_header()[
-                "prev_header"]]
-            if parent_node["height"] == 0:
-                break
+        parent_node = self.blockchain_graph[block.get_header()[
+            "prev_header"]]
+        parent_height = parent_node["height"]
+        while parent_height > 0:
             block_list.append(parent_node["block"])
+            parent_node = self.blockchain_graph[parent_node["block"].get_header()[
+                "prev_header"]]
+            # parent_node = self.blockchain_graph[block.get_header()[
+            #     "prev_header"]]
+            parent_height -= 1
         return block_list
 
     # def create_longest_chain(self, longest_header):

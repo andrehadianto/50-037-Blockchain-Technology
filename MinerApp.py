@@ -22,12 +22,30 @@ t1= Transaction(send_pub.to_string().hex(),rec_pub.to_string().hex(),100,'asdasd
 transaction_pool.append(t1)
 app = Flask(__name__)
 
-# priv_key, pub_key = generateKeyPair()
-# priv_key = priv_key.to_string().hex()
-# pub_key = pub_key.to_string().hex()
-# sutdcoin = Blockchain()
-# print('Genesis block generated')
-# myMiner = Miner(pub_key, sutdcoin)
+u1_priv, u1_pub = generateKeyPair()
+u1_priv = u1_priv.to_string().hex()
+u1_pub = u1_pub.to_string().hex()
+
+u2_priv, u2_pub = generateKeyPair()
+u2_priv = u2_priv.to_string().hex()
+u2_pub = u2_pub.to_string().hex()
+
+
+priv_key, pub_key = generateKeyPair()
+priv_key = priv_key.to_string().hex()
+pub_key = pub_key.to_string().hex()
+
+sutdcoin = Blockchain(pub_key)
+t1 = Transaction(pub_key, u2_pub, 50, "T1")
+t2 = Transaction(pub_key, u1_pub, 50, "T2")
+t3 = Transaction(pub_key, u1_pub, 50, "T3")
+t4 = Transaction(pub_key, u2_pub, 50, "T4")
+t5 = Transaction(pub_key, u2_pub, 50, "T5")
+t_list = [t1, t2, t3, t4, t5]
+
+print('Genesis block generated')
+myMiner = Miner(pub_key, sutdcoin, t_list)
+
 
 @app.route('/listen', methods=["POST"])
 def listen_to_broadcast(): 
@@ -53,6 +71,7 @@ def listen_to_broadcast():
 #         # Transaction(params[])
 #     except Exception as e:
 #         return {"Exception": str(e)}, 500
+
 
 @app.route('/announce/<port>')
 def announce(port):
@@ -86,6 +105,7 @@ def announce(port):
         return {"Exception": str(e)}, 500
   
 
+
 @app.route('/start_mining')
 def start_mining():
     myMiner.isMining = True
@@ -99,7 +119,9 @@ def start_mining():
             # announce res(new_block) to other miners
         # except Exception as e:
         #     return {"Exception": str(e)}, 500
-        # print(sutdcoin.blockchain_graph)
+        for k, v in sutdcoin.blockchain_graph.items():
+            print(k, ":", v)
+
 
 @app.route('/update')
 def update():
