@@ -37,7 +37,7 @@ class Blockchain:
             nonce = str(random.randint(0, 300000))
             genesis_block.set_nonce(nonce)
             to_hash = genesis_block.serialize()
-            digest = hashlib.sha256(to_hash).hexdigest()
+            digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
             if self.verify_pow(digest):
                 break
             counter += 1

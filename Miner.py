@@ -23,7 +23,7 @@ class Miner:
         ## RECEIVE NEW ANNOUNCEMENT ##
         for block in Miner.new_block_queue:
             to_hash = block.serialize()
-            digest = hashlib.sha256(to_hash).hexdigest()
+            digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
             if self.blockchain.verify_pow(digest) and self.blockchain.validate_block(block):
                 self.blockchain.add_block(block)
             Miner.new_block_queue.remove(block)
@@ -46,7 +46,7 @@ class Miner:
                 return "receive new block"
             generate_nonce = str(random.randint(0, 300000))
             new_block.header['nonce'] = generate_nonce
-            to_hash = new_block.serialize()
+            to_hash = new_block.serialize().encode('utf-8')
             digest = hashlib.sha256(to_hash).hexdigest()
             ## TRY ADDING BLOCK TO MINER'S BLOCKCHAIN ##
             # try:

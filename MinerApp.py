@@ -8,49 +8,83 @@ from Blockchain import Blockchain
 from Miner import Miner
 from Transaction import Transaction
 from KeyGen import generateKeyPair
+import cbor
 
+
+# BLOCKCHAIN_IP = 'http://localhost'
+# BLOCKCHAIN_PORT = '5001'
+# BLOCKCHAIN_APP = BLOCKCHAIN_IP+':'+BLOCKCHAIN_PORT
+
+transaction_pool = []
+send_priv,send_pub = generateKeyPair()
+rec_priv,rec_pub = generateKeyPair()
+t1= Transaction(send_pub.to_string().hex(),rec_pub.to_string().hex(),100,'asdasd')
+transaction_pool.append(t1)
 app = Flask(__name__)
 
-priv_key, pub_key = generateKeyPair()
-priv_key = priv_key.to_string().hex()
-pub_key = pub_key.to_string().hex()
-sutdcoin = Blockchain()
-print('Genesis block generated')
-myMiner = Miner(pub_key, sutdcoin)
+# priv_key, pub_key = generateKeyPair()
+# priv_key = priv_key.to_string().hex()
+# pub_key = pub_key.to_string().hex()
+# sutdcoin = Blockchain()
+# print('Genesis block generated')
+# myMiner = Miner(pub_key, sutdcoin)
 
 @app.route('/listen', methods=["POST"])
 def listen_to_broadcast(): 
-    print("I am receiving from: {}".format(request.remote_addr))
-    try:
-        json = json.loads(request.get_json())
-        print(json)
-        return 'success', 200
-    except Exception as e:
-        return {"Exception": str(e)}, 500
+    print('hello')
+    # try:
+    print(request.get_json())
+    print(type(request.get_json()))
+    jsonn = json.loads(request.get_json())
+    print(type(json.loads(jsonn['transactions'][0])['comment']))
+    print(json.loads(jsonn['transactions'][0])['comment'])
+    # print(jsonn['transactions'][0]['comment'])
+    # print(json[transactions][comment])
+    return 'success', 200
+    # except Exception as e:
+    #     return {"Exception": str(e)}, 500
+#     params = request.get_json()
 
 
-@app.route('/create_transaction', methods=['POST'])
-def create_transaction():
-    try:
-        params = request.get_json()
-        # Transaction(params[])
-    except Exception as e:
-        return {"Exception": str(e)}, 500
+# @app.route('/create_transaction', methods=['POST'])
+# def create_transaction():
+#     try:
+#         params = request.get_json()
+#         # Transaction(params[])
+#     except Exception as e:
+#         return {"Exception": str(e)}, 500
 
 @app.route('/announce/<port>')
 def announce(port):
     print("I am announcing to: {}".format(port))
     try:
-        block = Block()
-        form = {"msg": "hello from {}".format(PORT)}
-        form = json.dumps(form)
-        r = requests.post("http://localhost:5005/", json=form)
+        block = Block(transaction_pool,'i am genesis',rec_priv.to_string().hex())
+        print('created block')
+        dict_to_send = {}
+        dict_to_send['header'] = block.header
+        print('block serialized')
+        transactions_to_send = []
+        for t in transaction_pool:
+            transactions_to_send.append(t.serialize())
+        print('transactions added')
+        dict_to_send['transactions'] = transactions_to_send
+        dict_to_send['miner_id'] = rec_priv.to_string().hex()
+        print('done serializing')
+  
+        form = json.dumps(dict_to_send)
+        print(dict_to_send['transactions'])
+        print('sending now')
+        print(port)
+        r = requests.post("http://localhost:{}/listen".format(port), json=form)
+        print('done sending')
+        if r.ok:
+            return 'success', 200
+        else:
+
+            return 'not ok', 400
     except Exception as e:
         return {"Exception": str(e)}, 500
-    if r.ok:
-        return 'success', 200
-    else:
-        return 'not ok', 400
+  
 
 @app.route('/start_mining')
 def start_mining():
@@ -78,6 +112,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     PORT = args.port
     app.run("0.0.0.0", port=PORT, debug=True)
+
+
 
 
 # @app.route('/register_miner', methods=["POST"])

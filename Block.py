@@ -23,7 +23,7 @@ class Block:
         self.header["prev_header"] = prev_header
 
     def serialize(self):
-        return cbor.dumps(self.header)
+        return json.dumps(self.header)
 
     def set_nonce(self, nonce):
         self.header[nonce] = nonce

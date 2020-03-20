@@ -31,7 +31,7 @@ class Transaction(object):
         props["sender"] = self.sender
         props["amount"] = self.amount
         props["comment"] = self.comment
-        return cbor.dumps(props)
+        return json.dumps(props)
 
     @classmethod
     def deserialize(cls, js_string):

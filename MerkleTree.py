@@ -11,7 +11,7 @@ class MerkleTree():
         self.root = None
 
     def add(self, transaction):
-        digest = hashlib.sha256(transaction.serialize()).hexdigest()
+        digest = hashlib.sha256(transaction.serialize().encode('utf-8')).hexdigest()
         self.past_transactions.append(transaction)
         self.past_hashes.append(digest)
         return digest
