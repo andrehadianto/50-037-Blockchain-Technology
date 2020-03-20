@@ -7,11 +7,10 @@ import copy
 
 
 class Blockchain:
-    MAX_TARGET = 2.0247377111333645e+72
+    MIN_TARGET = 1.0147377111333645e+71
 
-    def __init__(self, sample1):
-        self.TARGET = 1.188913362042147e+72
-        self.sample1 = sample1
+    def __init__(self):
+        self.TARGET = 4.188913362042147e+71
         self.blockchain_graph = {}
         self.longest_chain = []
         self.longest_header = None
@@ -21,22 +20,20 @@ class Blockchain:
         """
         generating the genesis block
         """
-        genesis_block = Block([], "i am genesis", None)
-        counter = 0
-        nonce = str(random.randint(0, 300000))
-        genesis_block.set_nonce(nonce)
+        genesis_block = Block([], "i am genesis", None, "0", 0)
         to_hash = genesis_block.serialize()
-        digest = hashlib.sha256(to_hash).hexdigest()
+        digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
         self.blockchain_graph[digest] = {
             "children": [],
             "height": 0,
             "block": genesis_block,
-            "balance_map": {self.sample1: 1000}
+            "balance_map": {'pawel'.encode('utf-8').hex(): 10000}
         }
         self.longest_header = digest
 
     def verify_pow(self, digest):
         if int('0x'+digest, 0) < self.TARGET:
+            print('verify pow true')
             return True
         return False
 
@@ -45,14 +42,16 @@ class Blockchain:
         ensure proof of work is valid, transactions are new, timestamp
         return block isValidated
         """
-        ## CHECK INCOMING BLOCK IS MINED AFTER THE PARENT BLOCK ##
-        if block.get_header()["timestamp"] < self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
-            return False
+        # ## CHECK INCOMING BLOCK IS MINED AFTER THE PARENT BLOCK ##
+        # if block.get_header()["timestamp"] <= self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
+        #     print('timeerror')
+        #     return False
         ## CHECK FOR DUPLICATE TRANSACTIONS ##
         for trans in block.merkle_tree.past_transactions:
             for block_ in self.create_chain_to_parent_block(block):
                 for trans_ in block_.merkle_tree.past_transactions:
                     if trans.serialize() == trans_.serialize():
+                        print('repeated transactions')
                         return False
         return True
 
@@ -88,9 +87,9 @@ class Blockchain:
         if ratio < 0.5:
             ratio = 0.9
         self.TARGET *= ratio
-        print("new target is : ", self.TARGET)
-        if self.TARGET > Blockchain.MAX_TARGET:
-            self.TARGET = Blockchain.MAX_TARGET
+        print("ratio is : ", ratio)
+        if self.TARGET < Blockchain.MIN_TARGET:
+            self.TARGET = Blockchain.MIN_TARGET
         ## UPDATE BLOCKCHAIN ##
         self.blockchain_graph[digest] = {"children": [], "height": prev_level +
                                          1, "block": block, "balance_map": new_balance_map}  # creating new node

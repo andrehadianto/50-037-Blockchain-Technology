@@ -10,13 +10,13 @@ from ecdsa import SigningKey, VerifyingKey, NIST384p
 
 class Transaction(object):
 
-    def __init__(self, sender, receiver, amount, comment):
+    def __init__(self, sender, receiver, amount, comment, timestamp=int(time.time())):
         self.sender = sender
         self.receiver = receiver
         self.amount = amount
         self.comment = comment
         self.signature = None
-        self.timestamp = int(time.time())
+        self.timestamp = timestamp
 
     def __eq__(self, transaction):
         return True if self.sender == transaction.sender and self.receiver == transaction.receiver and self.amount == transaction.amount else False
@@ -34,15 +34,17 @@ class Transaction(object):
         props["comment"] = self.comment
         props["timestamp"] = self.timestamp
         return json.dumps(props)
-        
+
     @classmethod
     def deserialize(cls, js_string):
         obj = json.loads(js_string)
-        obj['sender'] = obj['sender'].encode('ascii')
-        obj['receiver'] = obj['receiver'].encode('ascii')
-        result = Transaction(VerifyingKey.from_string(base64.decodebytes(obj['sender']), curve=NIST384p), VerifyingKey.from_string(
-            base64.decodebytes(obj['receiver']), curve=NIST384p), obj['amount'], obj['comment'])
-        return result
+        trans = Transaction(obj['sender'], obj['receiver'],
+                            obj['amount'], obj['comment'], obj['timestamp'])
+        # obj['sender'] = obj['sender'].encode('ascii')
+        # obj['receiver'] = obj['receiver'].encode('ascii')
+        # result = Transaction(VerifyingKey.from_string(base64.decodebytes(obj['sender']), curve=NIST384p), VerifyingKey.from_string(
+        #     base64.decodebytes(obj['receiver']), curve=NIST384p), obj['amount'], obj['comment'])
+        return trans
 
     def sign(self, priv_key):
         s = self.serialize().encode()

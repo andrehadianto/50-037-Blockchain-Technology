@@ -1,12 +1,11 @@
 from MerkleTree import MerkleTree
-import cbor
 import time
 import random
 import hashlib
-
+import json
 
 class Block:
-    def __init__(self, transactions, prev_header, miner_id):
+    def __init__(self, transactions, prev_header, miner_id, nonce=None, timestamp=int(time.time())):
         self.merkle_tree = MerkleTree()
         for trans in transactions:
             self.merkle_tree.add(trans)
@@ -18,7 +17,8 @@ class Block:
             "nonce": None,
             "prev_header": None
         }
-        self.header["timestamp"] = int(time.time())
+        self.header["nonce"] = nonce
+        self.header["timestamp"] = timestamp
         self.header["root"] = self.merkle_tree.get_root()
         self.header["prev_header"] = prev_header
 
@@ -33,5 +33,5 @@ class Block:
 
     def hash_header(self):
         to_hash = self.serialize()
-        digest = hashlib.sha256(to_hash).hexdigest()
+        digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
         return digest
