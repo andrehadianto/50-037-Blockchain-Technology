@@ -15,7 +15,7 @@ import hashlib
 app = Flask(__name__)
 
 FOUNDER = 'pawel'.encode('utf-8').hex()
-PORT_LIST = [5005, 7337 ]
+PORT_LIST = [5004,5005]
 PORT_LIST_51 = [7337 ]
 CLIENT_PORT = 8080
 
@@ -28,9 +28,10 @@ sutdcoin = Blockchain()
 print('Genesis block generated')
 print(sutdcoin.blockchain_graph)
 
-@app.route('/create_transaction', methods=["POST"])
+@app.route('/create_transaction1', methods=["POST"])
 def prepare_transaction_to_send():
     res = request.get_json()
+    print(res)
     amount = res["amount"]
     comment = res["comment"]
     receiver = res["receiver"]
@@ -42,7 +43,7 @@ def prepare_transaction_to_send():
     data["amount"] = amount
     data["comment"] = comment
     data = json.dumps(data)
-
+    print(data)
     r = requests.post("http://localhost:{}/broadcast_transactions".format(CLIENT_PORT), json=data)
     return "200" if r.ok else "500"
 
@@ -67,13 +68,13 @@ def update_transaction_pool():
 @app.route('/listen', methods=["POST"])
 def listen_to_broadcast():
     res = json.loads(request.get_json())
-
+    difficulty = res["difficulty"]
     transaction_list = []
     for trans in res["transactions"]:
         transaction_list.append(Transaction.deserialize(trans))
     block = Block(transaction_list, res['header']
                   ['prev_header'], res['miner_id'], res['header']['nonce'], res['header']['timestamp'])
-    myMiner.new_block_queue.append(block)
+    myMiner.new_block_queue.append([block,difficulty])
     return 'success', 200
     # except Exception as e:
     #     return {"Exception": str(e)}, 500
@@ -87,6 +88,9 @@ def announce(block):
         try:
             data = {}
             data['header'] = block.get_header()
+            print(block.hash_header())
+            data['difficulty'] = sutdcoin.old_target
+            print(data['difficulty'])
             transactions_to_send = []
             for trans in block.merkle_tree.past_transactions:
                 transactions_to_send.append(trans.serialize())
@@ -99,6 +103,19 @@ def announce(block):
             print('done sending')
         except Exception as e:
             return {"Exception": str(e)}, 500
+    latest_block = sutdcoin.blockchain_graph[sutdcoin.longest_header]["block"]
+    print(latest_block)
+    latest_chain = sutdcoin.create_chain_to_parent_block(latest_block)
+    print(latest_chain)
+    chain_of_headers = []
+    for i in latest_chain:
+        head = i.get_header()
+        chain_of_headers.append(head)
+    d1 = {}
+    d1['list_headers'] = chain_of_headers
+    d1 = json.dumps(d1)
+    r = requests.post("http://localhost:{}/headers".format(8080),json=d1)
+        
     if r.ok:
         return 'success', 200
     else:
