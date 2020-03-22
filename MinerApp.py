@@ -97,6 +97,10 @@ def announce(block):
             r = requests.post(
                 "http://localhost:{}/listen".format(port), json=form)
             print('done sending')
+            latest_block = sutdcoin.blockchain_graph[sutdcoin.latest_header]["block"].get_header()
+            latest_chain = sutdcoin.create_chain_to_parent_block(latest_block)
+            chain = json.dumps(data)
+            r = requests.post("http://localhost:{}/headers".format(port),json=chain)
         except Exception as e:
             return {"Exception": str(e)}, 500
     if r.ok:
