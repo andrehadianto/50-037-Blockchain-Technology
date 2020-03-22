@@ -7,14 +7,15 @@ import copy
 
 
 class Blockchain:
-    MIN_TARGET = 1.0147377111333645e+71
+    MIN_TARGET = 6.0147377111333645e+71
 
     def __init__(self):
-        self.TARGET = 4.188913362042147e+71
+        self.TARGET = 6.188913362042147e+72
         self.blockchain_graph = {}
         self.longest_chain = []
         self.longest_header = None
         self.generate_genesis_block()
+        self.old_target = None
 
     def generate_genesis_block(self):
         """
@@ -31,8 +32,13 @@ class Blockchain:
         }
         self.longest_header = digest
 
-    def verify_pow(self, digest):
-        if int('0x'+digest, 0) < self.TARGET:
+    def verify_pow(self, digest,block_target = 0):
+        if block_target == 0:
+            block_target = self.TARGET
+        else:
+            block_target += 1
+            print(block_target)
+        if int('0x'+digest, 0) <= block_target:
             print('verify pow true')
             return True
         return False
@@ -86,6 +92,7 @@ class Blockchain:
             ratio = 1.5
         if ratio < 0.5:
             ratio = 0.9
+        self.old_target = self.TARGET
         self.TARGET *= ratio
         print("ratio is : ", ratio)
         if self.TARGET < Blockchain.MIN_TARGET:
@@ -94,6 +101,7 @@ class Blockchain:
         self.blockchain_graph[digest] = {"children": [], "height": prev_level +
                                          1, "block": block, "balance_map": new_balance_map}  # creating new node
         self.resolve2()
+        
 
     def create_chain_to_parent_block(self, block):
         block_list = []

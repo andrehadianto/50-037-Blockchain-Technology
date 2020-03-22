@@ -1,7 +1,7 @@
 from flask import Flask, request
 import requests
 from Transaction import Transaction
-from SPVClient import SPVClient
+#from SPVClient import SPVClient
 from KeyGen import generateKeyPair
 import argparse
 import json
@@ -9,8 +9,10 @@ import ecdsa
 
 app = Flask(__name__)
 
-MINERS_PORT_LIST = [5005]
+MINERS_PORT_LIST = [5004,5005]
+
 list_of_headers = []
+
 @app.route('/broadcast_transactions', methods=["POST"])
 def broadcast_transactions():
     res = json.loads(request.get_json())
@@ -37,15 +39,19 @@ def createTransaction(sender, receiver, amount, comment, priv_key):
 
 @app.route('/headers',methods = ["POST"])
 def get_headers():
+    global list_of_headers
     #wait for miners to send the longest chain
     res = json.loads(request.get_json())
-    chain_length = len(res)
+    chain_length = len(res['list_headers'])
     if chain_length > len(list_of_headers):
             list_of_headers = res
+    print(chain_length)
+    print(list_of_headers)
     return "200"
 
 def get_related_transactions(pub_key):
     #send request to miners
+    pass
      
 def verify_transactions(txn):
     timestamp = txn.timestamp
@@ -73,7 +79,8 @@ def verify_transactions(txn):
                 else:
                     to_hash = str(digest) + str(i[0])
                     digest = hashlib.sha256(to_hash.encode()).hexdigest()
-            if digest == i["root"]
+            if digest == i["root"]:
+                return True
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)

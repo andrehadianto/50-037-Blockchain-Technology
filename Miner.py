@@ -20,16 +20,18 @@ class Miner:
         ## RECEIVE NEW ANNOUNCEMENT ##
         for block in Miner.new_block_queue:
             print('new block queue')
-            to_hash = block.serialize()
+            to_hash = block[0].serialize()
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
             print('hash of announced block', digest)
-            if self.blockchain.verify_pow(digest):
+            print(block[1])
+            if self.blockchain.verify_pow(digest,block[1]):
                 print('verifying new blockqueue')
-                if self.blockchain.validate_block(block):
+                if self.blockchain.validate_block(block[0]):
                     print('validating new blockqueue')
-                    self.blockchain.add_block(block)
-
-                    print('success')
+                    self.blockchain.add_block(block[0])
+            else:
+                print("digest : ",digest," target : ", block[1], "assertion : ", int('0x'+digest, 0)<block[1])
+            print('success')
             print("NEW BLOCK QUEUE", self.miner_id)
             print(Miner.new_block_queue)
             Miner.new_block_queue.remove(block)
@@ -50,11 +52,11 @@ class Miner:
         ## GENERATE NONCE ##
         new_block = Block(
             list_of_trans, self.blockchain.longest_header, self.miner_id)
-        # counter = 0
+        counter = 0
         while True:
-            # if counter % 100000 == 0:
-            #     print("attempt:", counter)
-            # counter += 1
+            if counter % 100000 == 0:
+                print("attempt:", counter)
+            counter += 1
             if Miner.new_block_queue:
                 return "receive new block"
             generate_nonce = str(random.randint(0, 300000))
@@ -63,14 +65,17 @@ class Miner:
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
             ## TRY ADDING BLOCK TO MINER'S BLOCKCHAIN ##
             # try:
-            if self.blockchain.verify_pow(digest) and self.blockchain.validate_block(new_block):
-                self.blockchain.add_block(new_block)
-                print("MINER")
-                print(new_block.get_header())
-                for trans in list_of_trans:
-                    if trans in Miner.trans_pool:
-                        Miner.trans_pool.remove(trans)
-                return new_block
+            if self.blockchain.verify_pow(digest):
+                print( "digest verified")
+                if self.blockchain.validate_block(new_block):
+                    print("blockchain validate")
+                    self.blockchain.add_block(new_block)
+                    print("MINER")
+                    print(new_block.get_header())
+                    for trans in list_of_trans:
+                        if trans in Miner.trans_pool:
+                            Miner.trans_pool.remove(trans)
+                    return new_block
             # except Exception as e:
             #     print("error: ", e)
             #     return "error"
