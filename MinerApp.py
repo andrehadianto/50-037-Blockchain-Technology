@@ -23,6 +23,7 @@ CLIENT_PORT = 8080
 priv_key, pub_key = generateKeyPair()
 priv_key = priv_key.to_string().hex()
 pub_key = pub_key.to_string().hex()
+print(pub_key)
 
 sutdcoin = Blockchain()
 print('Genesis block generated')
@@ -95,7 +96,7 @@ def announce(block):
             for trans in block.merkle_tree.past_transactions:
                 transactions_to_send.append(trans.serialize())
             data['transactions'] = transactions_to_send
-            data['miner_id'] = myMiner.miner_id
+            data['miner_id'] = myMiner.miner_id # to get the longest one, used by /headers endpoint
 
             form = json.dumps(data)
             r = requests.post(
@@ -113,6 +114,7 @@ def announce(block):
         chain_of_headers.append(head)
     d1 = {}
     d1['list_headers'] = chain_of_headers
+    d1['miner_port'] = PORT
     d1 = json.dumps(d1)
     r = requests.post("http://localhost:{}/headers".format(8080),json=d1)
         
@@ -162,15 +164,15 @@ def start_mining():
         #     return {"Exception": str(e)}, 500
         announce(res)
 
-        print("==============BLOCKCHAIN===========")
-        for k, v in sutdcoin.blockchain_graph.items():
-            print("-----")
-            print(k)
-            print("height:", v['height'])
-            # print("block:", v['block'].get_header())
-            print("balance map:", v['balance_map'])
-            print("children:", v['children'])
-        print("==================================")
+        # print("==============BLOCKCHAIN===========")
+        # for k, v in sutdcoin.blockchain_graph.items():
+        #     print("-----")
+        #     print(k)
+        #     print("height:", v['height'])
+        #     # print("block:", v['block'].get_header())
+        #     print("balance map:", v['balance_map'])
+        #     print("children:", v['children'])
+        # print("==================================")
 
 @app.route('/start_mining_51')
 def start_mining_51():
@@ -225,6 +227,43 @@ def start_mining_51():
 @app.route('/update')
 def update():
     update_from_blockchain = True
+
+
+# @app.route('/my_transactions'):
+# def verify_my_transaction:
+#     r = requests.get("http://localhost:{}/list_transactions/{}".format(CLIENT_PORT,pub_key))
+#     if r.ok:
+#         return 200
+#     else:
+#         return 400
+
+@app.route('/get_transactions',methods=['POST'])
+def listening_to_my_transactions():
+    user_pub_key = request.get_json()['pub']
+    print(user_pub_key)
+    # need to serialize transaction and then make on other side
+    transactions_list = []
+    data = {}
+    # print(sutdcoin.blockchain_graph)
+    blockchain_graph_items = sutdcoin.blockchain_graph.items()
+    for k, v in blockchain_graph_items:
+        for trans in v['block'].merkle_tree.past_transactions:
+            if trans.sender == user_pub_key or trans.receiver == user_pub_key:
+                transactions_list.append(trans.serialize())
+    #     print("-----")
+    #     print(k) #header
+    #     print("height:", v['height'])
+    #     # print("block:", v['block'].get_header())
+    #     print("balance map:", v['balance_map'])
+    #     print("children:", v['children'])
+    # print("==================================")
+    data['transaction_list'] = transactions_list
+    print("THE TRANSACTION LIST IS:" ,data)
+    data = json.dumps(data)
+    return data, 200
+
+
+
 
 
 if __name__ == '__main__':

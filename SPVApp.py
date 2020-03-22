@@ -12,6 +12,7 @@ app = Flask(__name__)
 MINERS_PORT_LIST = [5004,5005]
 
 list_of_headers = []
+longest_miner = 0
 
 @app.route('/broadcast_transactions', methods=["POST"])
 def broadcast_transactions():
@@ -40,18 +41,44 @@ def createTransaction(sender, receiver, amount, comment, priv_key):
 @app.route('/headers',methods = ["POST"])
 def get_headers():
     global list_of_headers
+    global longest_miner
     #wait for miners to send the longest chain
     res = json.loads(request.get_json())
     chain_length = len(res['list_headers'])
     if chain_length > len(list_of_headers):
-            list_of_headers = res
-    print(chain_length)
-    print(list_of_headers)
+            list_of_headers = res['list_headers']
+            longest_miner = res['miner_port']
+    # print(chain_length)
+    # print(list_of_headers)
     return "200"
 
-def get_related_transactions(pub_key):
+
+@app.route('/list_transactions',methods=['POST'])
+def get_related_transactions():
     #send request to miners
-    pass
+    #this is the longest guy
+    data = request.get_json()
+    print(longest_miner)
+    r = requests.post("http://localhost:{}/get_transactions".format(longest_miner),json=data)
+    res = r.json()
+    print("THE TRANSACTION LIST FROM MINER:" , res)
+    transaction_list = []
+    # After u get the txn params here, have to initialize a new txn
+    for trans in res['transaction_list']:
+        trans = json.loads(trans)
+        print("SERIALIZED TRANSACTION FROM GET: ",transaction_list)
+        sender = trans["sender"]
+        receiver = trans["receiver"]
+        amount = trans["amount"]
+        comment = trans["comment"]
+        timestamp = trans["timestamp"]
+        signature = trans["signature"]
+        t = Transaction(sender, receiver, amount, comment, timestamp, signature)
+        transaction_list.append(t)
+
+    # this should get test
+
+    return 'success',200
      
 def verify_transactions(txn):
     timestamp = txn.timestamp
