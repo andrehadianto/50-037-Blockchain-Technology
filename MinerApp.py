@@ -28,6 +28,20 @@ sutdcoin = Blockchain()
 print('Genesis block generated')
 print(sutdcoin.blockchain_graph)
 
+@app.route('/show_graph')
+def show_graph():
+    print("==============BLOCKCHAIN===========")
+    for k, v in sutdcoin.blockchain_graph.items():
+        print("-----")
+        print(k)
+        print("owner:", v["block"].miner_id)
+        print("height:", v['height'])
+        # print("block:", v['block'].get_header())
+        print("balance map:", v['balance_map'])
+        print("children:", v['children'])
+    print("==================================")
+    return "200"
+
 @app.route('/create_transaction1', methods=["POST"])
 def prepare_transaction_to_send():
     res = request.get_json()
