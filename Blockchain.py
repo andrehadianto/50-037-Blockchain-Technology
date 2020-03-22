@@ -7,10 +7,10 @@ import copy
 
 
 class Blockchain:
-    MIN_TARGET = 6.0147377111333645e+71
+    MIN_TARGET = 1.0147377111333645e+71
 
     def __init__(self):
-        self.TARGET = 6.188913362042147e+72
+        self.TARGET = 6.488913362042147e+71
         self.blockchain_graph = {}
         self.longest_chain = []
         self.longest_header = None
@@ -45,14 +45,18 @@ class Blockchain:
         return block isValidated
         """
         # ## CHECK INCOMING BLOCK IS MINED AFTER THE PARENT BLOCK ##
-        if block.get_header()["timestamp"] <= self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
-            return False
+        # if block.get_header()["timestamp"] < self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
+        #     print("block time : ",block.get_header()["timestamp"], "prev header time ", self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"])
+        #     return False
+        
         ## CHECK FOR DUPLICATE TRANSACTIONS ##
         for trans in block.merkle_tree.past_transactions:
             for block_ in self.create_chain_to_parent_block(block):
                 for trans_ in block_.merkle_tree.past_transactions:
                     if trans.serialize() == trans_.serialize():
                         return False
+        if block.hash_header() in self.blockchain_graph:
+            return False
         return True
 
     def get_node_balance_map(self, digest):
@@ -84,7 +88,7 @@ class Blockchain:
         ratio = float(time_diff/expected)
         if ratio > 2.0:
             ratio = 1.5
-        if ratio < 0.5:
+        if ratio < 0.9:
             ratio = 0.9
         self.old_target = self.TARGET
         self.TARGET *= ratio

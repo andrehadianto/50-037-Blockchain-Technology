@@ -47,6 +47,7 @@ class Miner:
             if counter % 100000 == 0:
                 print("attempt:", counter)
             counter += 1
+
             if Miner.new_block_queue:
                 return "receive new block"
             generate_nonce = str(random.randint(0, 300000))
@@ -55,13 +56,14 @@ class Miner:
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
             ## TRY ADDING BLOCK TO MINER'S BLOCKCHAIN ##
             # try:
-            if self.blockchain.verify_pow(digest):
-                if self.blockchain.validate_block(new_block):
-                    self.blockchain.add_block(new_block)
-                    for trans in list_of_trans:
-                        if trans in Miner.trans_pool:
-                            Miner.trans_pool.remove(trans)
-                    return new_block
+            if counter < random.randint(500000,900000):
+                if self.blockchain.verify_pow(digest):
+                    if self.blockchain.validate_block(new_block):
+                        self.blockchain.add_block(new_block)
+                        for trans in list_of_trans:
+                            if trans in Miner.trans_pool:
+                                Miner.trans_pool.remove(trans)
+                        return new_block
             # except Exception as e:
             #     print("error: ", e)
             #     return "error"
@@ -69,12 +71,14 @@ class Miner:
     def evil51_mining(self, evil_header):
         ## RECEIVE NEW ANNOUNCEMENT ##
         for block in Miner.new_block_queue:
-            to_hash = block.serialize()
+            print('new block queue')
+            to_hash = block[0].serialize()
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
             print('hash of announced block', digest)
-            if self.blockchain.verify_pow(digest):
-                if self.blockchain.validate_block(block):
-                    self.blockchain.add_block(block)
+            if self.blockchain.verify_pow(digest, block[1]):
+                if self.blockchain.validate_block(block[0]):
+                    self.blockchain.add_block(block[0])
+            print("NEW BLOCK QUEUE", self.miner_id)
             Miner.new_block_queue.remove(block)
         self.blockchain.longest_header = evil_header
         list_of_trans = []
@@ -92,13 +96,15 @@ class Miner:
         ## GENERATE NONCE ##
         new_block = Block(
             list_of_trans, self.blockchain.longest_header, self.miner_id)
-        # counter = 0
+        counter = 0
         while True:
-            # if counter % 100000 == 0:
-            #     print("attempt:", counter)
-            # counter += 1
-            if Miner.new_block_queue:
+            if counter % 100000 == 0:
+                print("attempt:", counter)
+            counter += 1
+            if Miner.new_block_queue and Miner.new_block_queue[-1][2] == "good":
                 return "receive new block"
+            elif Miner.new_block_queue and Miner.new_block_queue[-1][2] == "evil":
+                return "receive evil block"
             generate_nonce = str(random.randint(0, 300000))
             new_block.header['nonce'] = generate_nonce
             to_hash = new_block.serialize()
@@ -107,6 +113,7 @@ class Miner:
             # try:
             if self.blockchain.verify_pow(digest) and self.blockchain.validate_block(new_block):
                 self.blockchain.add_block(new_block)
+                print(len(self.blockchain.create_chain_to_parent_block(new_block))+1)
                 for trans in list_of_trans:
                     if trans in Miner.trans_pool:
                         Miner.trans_pool.remove(trans)
