@@ -35,11 +35,7 @@ class Blockchain:
     def verify_pow(self, digest,block_target = 0):
         if block_target == 0:
             block_target = self.TARGET
-        else:
-            block_target += 1
-            print(block_target)
         if int('0x'+digest, 0) <= block_target:
-            print('verify pow true')
             return True
         return False
 
@@ -49,15 +45,13 @@ class Blockchain:
         return block isValidated
         """
         # ## CHECK INCOMING BLOCK IS MINED AFTER THE PARENT BLOCK ##
-        # if block.get_header()["timestamp"] <= self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
-        #     print('timeerror')
-        #     return False
+        if block.get_header()["timestamp"] <= self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
+            return False
         ## CHECK FOR DUPLICATE TRANSACTIONS ##
         for trans in block.merkle_tree.past_transactions:
             for block_ in self.create_chain_to_parent_block(block):
                 for trans_ in block_.merkle_tree.past_transactions:
                     if trans.serialize() == trans_.serialize():
-                        print('repeated transactions')
                         return False
         return True
 
@@ -94,7 +88,7 @@ class Blockchain:
             ratio = 0.9
         self.old_target = self.TARGET
         self.TARGET *= ratio
-        print("ratio is : ", ratio)
+        # print("ratio is : ", ratio)
         if self.TARGET < Blockchain.MIN_TARGET:
             self.TARGET = Blockchain.MIN_TARGET
         ## UPDATE BLOCKCHAIN ##
@@ -140,7 +134,8 @@ class Blockchain:
         highest_level_n_digest = []
         for digest, node in self.blockchain_graph.items():  # finding the highest level_n
             if len(node["children"]) > 1:
-                print('Fork is found...')
+                pass
+                # print('Fork is found...')
             # check transaction
             if node["height"] > highest_level_n:
                 highest_level_n_digest = []  # getting nodes with highest level_n

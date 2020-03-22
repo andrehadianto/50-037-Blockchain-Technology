@@ -9,7 +9,7 @@ import ecdsa
 
 app = Flask(__name__)
 
-MINERS_PORT_LIST = [5004,5005]
+MINERS_PORT_LIST = [7337, 7338,5005]
 
 list_of_headers = []
 longest_miner = 0
