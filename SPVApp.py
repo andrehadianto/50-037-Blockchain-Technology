@@ -9,7 +9,7 @@ import ecdsa
 
 app = Flask(__name__)
 
-MINERS_PORT_LIST = [7337, 7338,5005]
+MINERS_PORT_LIST = [5004,5005]
 
 list_of_headers = []
 longest_miner = 0
@@ -59,8 +59,8 @@ def get_related_transactions():
     #send request to miners
     #this is the longest guy
     data = request.get_json()
-    print(longest_miner)
-    r = requests.post("http://localhost:{}/get_transactions".format(longest_miner),json=data)
+    #print(longest_miner)
+    r = requests.post("http://localhost:{}/get_transactions".format(5005),json=data)
     res = r.json()
     print("THE TRANSACTION LIST FROM MINER:" , res)
     transaction_list = []

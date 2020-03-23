@@ -7,10 +7,10 @@ import copy
 
 
 class Blockchain:
-    MIN_TARGET = 6.0147377111333645e+71
+    MIN_TARGET = 1.0147377111333645e+71
 
     def __init__(self):
-        self.TARGET = 6.188913362042147e+72
+        self.TARGET = 1.188913362042147e+72
         self.blockchain_graph = {}
         self.longest_chain = []
         self.longest_header = None
@@ -45,8 +45,8 @@ class Blockchain:
         return block isValidated
         """
         # ## CHECK INCOMING BLOCK IS MINED AFTER THE PARENT BLOCK ##
-        if block.get_header()["timestamp"] <= self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
-            return False
+        #if block.get_header()["timestamp"] <= self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
+         #   return False
         ## CHECK FOR DUPLICATE TRANSACTIONS ##
         for trans in block.merkle_tree.past_transactions:
             for block_ in self.create_chain_to_parent_block(block):

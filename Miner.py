@@ -56,6 +56,7 @@ class Miner:
             ## TRY ADDING BLOCK TO MINER'S BLOCKCHAIN ##
             # try:
             if self.blockchain.verify_pow(digest):
+                print("verified")
                 if self.blockchain.validate_block(new_block):
                     self.blockchain.add_block(new_block)
                     for trans in list_of_trans:
