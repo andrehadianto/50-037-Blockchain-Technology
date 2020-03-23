@@ -171,7 +171,6 @@ def announce_51(block):
 @app.route('/start_mining')
 def start_mining():
     myMiner.isMining = True
-    time.sleep(5)
     while True:
         time.sleep(0.5)
         # try:

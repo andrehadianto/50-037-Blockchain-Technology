@@ -54,8 +54,7 @@ def get_headers():
     if chain_length > len(list_of_headers):
         list_of_headers = res['list_headers']
         longest_miner = res['miner_port']
-    # print(chain_length)
-    # print(list_of_headers)
+    
     return "200"
 
 
@@ -64,7 +63,6 @@ def get_related_transactions():
     # send request to miners
     # this is the longest guy
     data = request.get_json()
-    # print(longest_miner)
     r = requests.post(
         "http://localhost:{}/get_transactions".format(5005), json=data)
     res = r.json()
@@ -89,7 +87,7 @@ def get_related_transactions():
         txn_and_proofs[pub_key].append( {"transaction" : t, "nodes" : trans_[1], "neighbour":trans_[2], "index" : trans_[3] } )
 
     # this should get test
-
+    print(transaction_list)
     return 'success', 200
 
 
