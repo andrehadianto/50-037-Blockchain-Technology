@@ -14,11 +14,6 @@ import hashlib
 
 app = Flask(__name__)
 
-# CLIENT LIST
-PORT_LIST = [5004, 5005]
-PORT_LIST_51 = [7337, 7338]
-
-SPVAPP_PORT = 8080
 
 FOUNDER = 'pawel'.encode('utf-8').hex()
 
@@ -27,27 +22,65 @@ priv_key, pub_key = generateKeyPair()
 priv_key = priv_key.to_string().hex()
 pub_key = pub_key.to_string().hex()
 
+
 sutdcoin = Blockchain()
 print('===Genesis block generated===')
 print("My ID:", pub_key)
+
+
+
+parser = argparse.ArgumentParser(description="Configure miners")
+parser.add_argument('-p', '--port', type=int, required=True, help="PORT")
+parser.add_argument('-s', '--simulation', type=str, required=False, help="type of simulation: normal, 51, selfish")
+args = parser.parse_args()
+print(args)
+if args.simulation == "normal" or args.simulation == "selfish":
+    PORT_LIST = [5004, 5005]
+    PORT_LIST_51 = []
+elif args.simulation == "51":
+    PORT_LIST = [7337, 7338, 5005]
+    PORT_LIST_51 = [7337, 7338]
+SPVAPP_PORT = 8080
 
 stopEvil = False
 
 @app.route('/show_graph')
 def showGraph():
-    print("==============BLOCKCHAIN===========")
+    longest_block = sutdcoin.blockchain_graph[sutdcoin.longest_header]["block"]
+    block_list = sutdcoin.createChainToParentBlock(longest_block)
+    block_list.insert(0, longest_block)
+    block_list.reverse()
+
+    longest_graph = [block.hash_header()[-6:] for block in block_list]
+    print("=============BLOCKCHAIN=============")
+    string = " -> ".join(longest_graph)
+    print(string)
+    print("==================================")
     for k, v in sutdcoin.blockchain_graph.items():
         print("-----")
         print(k[-6:])
         print("owner:", v["block"].miner_id)
         print("height:", v['height'])
         # print("block:", v['block'].get_header())
-        print("balance map:", ["{} : {}".format(key[-6:],val) for key,val in v['balance_map'].items()])
+        # print("balance map:", ["{} : {}".format(key[-6:],val) for key,val in v['balance_map'].items()])
         print("children:", [child[-6:] for child in v['children']])
     print("==================================")
     return "200"
 
-@app.route('/create_transaction1', methods=["POST"])
+
+    # print("==============BLOCKCHAIN===========")
+    # for k, v in sutdcoin.blockchain_graph.items():
+    #     print("-----")
+    #     print(k[-6:])
+    #     print("owner:", v["block"].miner_id)
+    #     print("height:", v['height'])
+    #     # print("block:", v['block'].get_header())
+    #     print("balance map:", ["{} : {}".format(key[-6:],val) for key,val in v['balance_map'].items()])
+    #     print("children:", [child[-6:] for child in v['children']])
+    # print("==================================")
+    # return "200"
+
+@app.route('/create_transaction', methods=["POST"])
 def prepare_transaction_to_send():
     res = request.get_json()
     amount = res["amount"]
@@ -168,7 +201,11 @@ def stop51Attack():
 @app.route('/start_mining')
 def start_mining():
     myMiner.isMining = True
+    counter = 0
     while True:
+        if counter % 5:
+            r = showGraph()
+        counter += 1
         # try:
         res = myMiner.startMining()
         if res == "receive new block":
@@ -200,10 +237,9 @@ def start51Mining():
     print("COMMENCING EVIL DEEDS")
     evil_length = 0
     evil_head = sutdcoin.blockchain_graph["4a18a58e969d9281c65ff9fdc9443f23ce2484c532329a99c14f58b5eaef5120"]["children"][0]
-    while evil_length <= good_length and not stopEvil:
+    while evil_length <= good_length + 2 and not stopEvil:
         print('good chain length:', good_length)
         print('evil chain length:', evil_length)
-        print("stop evil?:", stopEvil)
         res = myMiner.start51Mining(evil_head)
         if res == "receive new block":
             print('received a good block')
@@ -234,6 +270,7 @@ def start51Mining():
             evil_block_list.reverse()
             announce(evil_block_list)
     print("EVIL DEED IS DONE")
+    r = showGraph()
     while True:
         res = myMiner.startMining()
         if res == "receive new block":
@@ -266,7 +303,8 @@ def start_selfish_mining():
                     if len(list_of_priv_blocks)>=2:
                         announce(list_of_priv_blocks)
                         print("SELFISH MINING SUCCESS")
-                             
+                        r = showGraph()
+
 @app.route('/start_mining_sequential')
 def start_mining_sequential():
     myMiner.isMining = True
@@ -297,11 +335,7 @@ def update():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Configure miners")
-    parser.add_argument('-p', '--port', type=int, required=True, help="PORT")
-    parser.add_argument('-e', '--evil', type=bool, required=False, help="51% Attack")
-    args = parser.parse_args()
+
 
     myMiner = Miner(pub_key, sutdcoin)
-    PORT = args.port
-    app.run(host="0.0.0.0", port=PORT, debug=True)
+    app.run(host="0.0.0.0", port=args.port, debug=True)

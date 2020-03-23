@@ -7,23 +7,22 @@ import copy
 
 
 class Blockchain:
-    MIN_TARGET = 6.0147377111333645e+70
+    MIN_TARGET = 9.0147377111333645e+70
 
     def __init__(self):
-        self.TARGET = 5.188913362042147e+71
+        self.TARGET = 2.188913362042147e+71
         self.blockchain_graph = {}
         self.longest_chain = []
         self.longest_header = None
         self.generateGenesisBlock()
-        self.old_target = 5.188913362042147e+71
+        self.old_target = 2.188913362042147e+71
 
     def generateGenesisBlock(self):
         """
         generating the genesis block
         """
         genesis_block = Block([], "i am genesis", None, "0", 0)
-        to_hash = genesis_block.serialize()
-        digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
+        digest = genesis_block.hash_header()
         self.blockchain_graph[digest] = {
             "children": [],
             "height": 0,
@@ -115,6 +114,7 @@ class Blockchain:
             # parent_node = self.blockchain_graph[block.get_header()[
             #     "prev_header"]]
             parent_height -= 1
+        block_list.append(self.blockchain_graph["4a18a58e969d9281c65ff9fdc9443f23ce2484c532329a99c14f58b5eaef5120"]["block"])
         return block_list
 
     # def create_longest_chain(self, longest_header):

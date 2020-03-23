@@ -54,14 +54,13 @@ class Miner:
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
             ## TRY ADDING BLOCK TO MINER'S BLOCKCHAIN ##
             # try:
-            if counter < random.randint(500000,900000):
-                if self.blockchain.verifyPow(digest):
-                    if self.blockchain.validateBlock(new_block):
-                        self.blockchain.addBlock(new_block)
-                        for trans in list_of_trans:
-                            if trans in Miner.trans_pool:
-                                Miner.trans_pool.remove(trans)
-                        return new_block
+            if self.blockchain.verifyPow(digest):
+                if self.blockchain.validateBlock(new_block):
+                    self.blockchain.addBlock(new_block)
+                    for trans in list_of_trans:
+                        if trans in Miner.trans_pool:
+                            Miner.trans_pool.remove(trans)
+                    return new_block
             # except Exception as e:
             #     print("error: ", e)
             #     return "error"
