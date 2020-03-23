@@ -13,21 +13,19 @@ class Miner:
         self.isMining = False
         self.naughty = naughty
 
-    def found_new_block(self, block):
-        Miner.new_block_queue.append(block)
-
     def start_mining(self):
         ## RECEIVE NEW ANNOUNCEMENT ##
+        print('===new block queue===')
+        print([i[0].hash_header() for i in Miner.new_block_queue])
         for block in Miner.new_block_queue:
-            print('new block queue')
             to_hash = block[0].serialize()
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
-            print('hash of announced block', digest)
+            print(self.miner_id[-6:], ', hash of announced block', digest)
             if self.blockchain.verify_pow(digest, block[1]):
                 if self.blockchain.validate_block(block[0]):
                     self.blockchain.add_block(block[0])
-            print("NEW BLOCK QUEUE", self.miner_id)
-            Miner.new_block_queue.remove(block)
+        Miner.new_block_queue = []
+        print("-----------------")
         list_of_trans = []
         bal_map = self.blockchain.blockchain_graph[self.blockchain.longest_header]["balance_map"]
         ## COLLECT VALID TRANSACTIONS ##
@@ -50,7 +48,7 @@ class Miner:
 
             if Miner.new_block_queue:
                 return "receive new block"
-            generate_nonce = str(random.randint(0, 300000))
+            generate_nonce = str(random.randint(0, 100000000))
             new_block.header['nonce'] = generate_nonce
             to_hash = new_block.serialize()
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
@@ -70,17 +68,32 @@ class Miner:
 
     def evil51_mining(self, evil_header):
         ## RECEIVE NEW ANNOUNCEMENT ##
+        print('===EVIL new block queue===')
         for block in Miner.new_block_queue:
-            print('new block queue')
+            print(block)
             to_hash = block[0].serialize()
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
-            print('hash of announced block', digest)
+            print(self.miner_id[-6:], ', hash of announced block', digest)
             if self.blockchain.verify_pow(digest, block[1]):
                 if self.blockchain.validate_block(block[0]):
                     self.blockchain.add_block(block[0])
-            print("NEW BLOCK QUEUE", self.miner_id)
-            Miner.new_block_queue.remove(block)
-        self.blockchain.longest_header = evil_header
+            if block[2] == "evil":
+                print("received block is evil")
+                evil_chain_length = len(self.blockchain.create_chain_to_parent_block(block[0])) + 1
+                print(evil_chain_length)
+        Miner.new_block_queue = []
+            
+        print("-----------------")
+
+        try:
+            print("length of chain from the argument",len(self.blockchain.create_chain_to_parent_block(self.blockchain.blockchain_graph[evil_header]["block"]) + 1))
+            if evil_chain_length > len(self.blockchain.create_chain_to_parent_block(self.blockchain.blockchain_graph[evil_header]["block"]) + 1):
+                self.blockchain.longest_header = digest
+            else:
+                self.blockchain.longest_header = evil_header
+        except:
+            self.blockchain.longest_header = evil_header
+
         list_of_trans = []
         bal_map = self.blockchain.blockchain_graph[self.blockchain.longest_header]["balance_map"]
         ## COLLECT VALID TRANSACTIONS ##
@@ -105,7 +118,7 @@ class Miner:
                 return "receive new block"
             elif Miner.new_block_queue and Miner.new_block_queue[-1][2] == "evil":
                 return "receive evil block"
-            generate_nonce = str(random.randint(0, 300000))
+            generate_nonce = str(random.randint(0, 100000000))
             new_block.header['nonce'] = generate_nonce
             to_hash = new_block.serialize()
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()

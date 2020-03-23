@@ -26,20 +26,20 @@ priv_key = priv_key.to_string().hex()
 pub_key = pub_key.to_string().hex()
 
 sutdcoin = Blockchain()
-print('Genesis block generated')
-print(sutdcoin.blockchain_graph)
+print('===Genesis block generated===')
+print("My ID:", pub_key)
 
 @app.route('/show_graph')
 def show_graph():
     print("==============BLOCKCHAIN===========")
     for k, v in sutdcoin.blockchain_graph.items():
         print("-----")
-        print(k)
+        print(k[-6:])
         print("owner:", v["block"].miner_id)
         print("height:", v['height'])
         # print("block:", v['block'].get_header())
         # print("balance map:", v['balance_map'])
-        print("children:", v['children'])
+        print("children:", [child[-6:] for child in v['children']])
     print("==================================")
     return "200"
 
@@ -80,47 +80,100 @@ def update_transaction_pool():
 
 @app.route('/listen', methods=["POST"])
 def listen_to_broadcast():
+    print("===LISTENING===")
     res = json.loads(request.get_json())
     if res.get("stop"):
+        print("someone ask me to stop")
         stopEvil = True
         return 'success',200
 
-
-    difficulty = res["difficulty"]
-    evil = res["evil"]
-    transaction_list = []
-    for trans in res["transactions"]:
-        transaction_list.append(Transaction.deserialize(trans))
-    block = Block(transaction_list, res['header']
-                  ['prev_header'], res['miner_id'], res['header']['nonce'], res['header']['timestamp'])
-    myMiner.new_block_queue.append([block,difficulty,evil])
+    for data in res.values():
+        difficulty = data["difficulty"]
+        evil = data["evil"]
+        transaction_list = []
+        for trans in data["transactions"]:
+            transaction_list.append(Transaction.deserialize(trans))
+        block = Block(transaction_list, data['header']
+                    ['prev_header'], data['miner_id'], data['header']['nonce'], data['header']['timestamp'])
+        myMiner.new_block_queue.append([block, difficulty, evil])
+    print("---------")
     return 'success', 200
     # except Exception as e:
     #     return {"Exception": str(e)}, 500
 #     params = request.get_json()
 
-def announce(block, isEvil=False):
+@app.route('/stop_being_bad')
+def stop_being_bad():
+    print("_----bad---___")
+    global stopEvil
+    stopEvil = True
+    return "success", 200
+
+# def announce(block, isEvil=False):
+#     PORTS = PORT_LIST_51 if isEvil else PORT_LIST
+#     for port in PORTS:
+#         if port == args.port:
+#             continue
+#         print("I am announcing to: {}".format(port))
+#         print(block.hash_header()[-6:])
+#         try:
+#             data = {}
+#             data['header'] = block.get_header()
+#             data['difficulty'] = sutdcoin.old_target
+#             data["evil"] = "evil" if isEvil else "good"
+#             transactions_to_send = []
+#             for trans in block.merkle_tree.past_transactions:
+#                 transactions_to_send.append(trans.serialize())
+#             data['transactions'] = transactions_to_send
+#             data['miner_id'] = myMiner.miner_id
+#             form = json.dumps(data)
+#             r = requests.post(
+#                 "http://localhost:{}/listen".format(port), json=form)
+#         except Exception as e:
+#             return {"Exception": str(e)}, 500
+#     latest_block = sutdcoin.blockchain_graph[sutdcoin.longest_header]["block"]
+#     latest_chain = sutdcoin.create_chain_to_parent_block(latest_block)
+#     chain_of_headers = []
+#     for i in latest_chain:
+#         head = i.get_header()
+#         chain_of_headers.append(head)
+#     d1 = {}
+#     d1['list_headers'] = chain_of_headers
+#     d1 = json.dumps(d1)
+#     r = requests.post("http://localhost:{}/headers".format(8080),json=d1)
+        
+#     if r.ok:
+#         return 'success', 200
+#     else:
+#         return 'not ok', 400
+
+def announce(blocks, isEvil=False):
+    print("===Announcing===")
     PORTS = PORT_LIST_51 if isEvil else PORT_LIST
     for port in PORTS:
         if port == args.port:
             continue
         print("I am announcing to: {}".format(port))
-        print(block.serialize())
-        try:
-            data = {}
-            data['header'] = block.get_header()
-            data['difficulty'] = sutdcoin.old_target
-            data["evil"] = "evil" if isEvil else "good"
-            transactions_to_send = []
-            for trans in block.merkle_tree.past_transactions:
-                transactions_to_send.append(trans.serialize())
-            data['transactions'] = transactions_to_send
-            data['miner_id'] = myMiner.miner_id
-            form = json.dumps(data)
-            r = requests.post(
-                "http://localhost:{}/listen".format(port), json=form)
-        except Exception as e:
-            return {"Exception": str(e)}, 500
+        data = {}
+        for i in range(len(blocks)):
+            try:
+                print(blocks[i].hash_header()[-6:])
+                data[i] = {}
+                data[i]['header'] = blocks[i].get_header()
+                data[i]['difficulty'] = sutdcoin.old_target
+                print(isEvil)
+                data[i]["evil"] = "evil" if isEvil else "good"
+                transactions_to_send = []
+                for trans in blocks[i].merkle_tree.past_transactions:
+                    transactions_to_send.append(trans.serialize())
+                data[i]['transactions'] = transactions_to_send
+                data[i]['miner_id'] = myMiner.miner_id
+            except Exception as e:
+                return {"Exception": str(e)}, 500
+        form = json.dumps(data)
+        r = requests.post(
+            "http://localhost:{}/listen".format(port), json=form)
+
     latest_block = sutdcoin.blockchain_graph[sutdcoin.longest_header]["block"]
     latest_chain = sutdcoin.create_chain_to_parent_block(latest_block)
     chain_of_headers = []
@@ -131,23 +184,20 @@ def announce(block, isEvil=False):
     d1['list_headers'] = chain_of_headers
     d1 = json.dumps(d1)
     r = requests.post("http://localhost:{}/headers".format(8080),json=d1)
-        
+    print("-----------------")
     if r.ok:
         return 'success', 200
     else:
         return 'not ok', 400
 
-def announce_51(stop):
+def announce_51():
+    print("===AnnouncingEVIL===")
     for port in PORT_LIST_51:
         if port == args.port:
             continue
         print("I am announcing to: {}".format(port))
-        print(block.serialize())
-        if stop == "stop":
-            form = {}
-            form['stop'] = 'stop'
-            form = json.dumps(form)
-            r = requests.post("http://localhost:{}/listen".format(port), json=form)
+        r = requests.get("http://localhost:{}/stop_being_bad".format(port))
+    print("-----------------")
     if r.ok:
         return 'success', 200
     else:
@@ -156,7 +206,6 @@ def announce_51(stop):
 @app.route('/start_mining')
 def start_mining():
     myMiner.isMining = True
-    time.sleep(2)
     while True:
         # try:
         res = myMiner.start_mining()
@@ -166,75 +215,62 @@ def start_mining():
             continue
         # except Exception as e:
         #     return {"Exception": str(e)}, 500
-        announce(res)
-
-        # print("==============BLOCKCHAIN===========")
-        # for k, v in sutdcoin.blockchain_graph.items():
-        #     print("-----")
-        #     print(k)
-        #     print("owner:", v["block"].miner_id)
-        #     print("height:", v['height'])
-        #     # print("block:", v['block'].get_header())
-        #     print("balance map:", v['balance_map'])
-        #     print("children:", v['children'])
-        # print("==================================")
+        announce([res])
+        
 @app.route('/start_mining_51')
 def start_mining_51():
     myMiner.isMining = True
-    time.sleep(2)
-    counter = 0
+    good_length = 0
     
-    while counter <= 4:
-        counter += 1
+    while good_length < 3:
+        #counter += 1
         # try:
         res = myMiner.start_mining()
         if res == "receive new block":
             continue
         elif res == "error":
             continue
+        good_length = len(sutdcoin.create_chain_to_parent_block(sutdcoin.blockchain_graph[sutdcoin.longest_header]["block"])) + 1
         # except Exception as e:
         #     return {"Exception": str(e)}, 500
-        announce(res)
+        announce([res])
 
     print("COMMENCING EVIL DEEDS")
-    good_length = 4
     evil_length = 0
     evil_head = sutdcoin.blockchain_graph["4a18a58e969d9281c65ff9fdc9443f23ce2484c532329a99c14f58b5eaef5120"]["children"][0]
-    while evil_length < good_length:
-        if stopEvil:
-            break
+    while evil_length <= good_length and not stopEvil:
+        print('good chain length:', good_length)
+        print('evil chain length:', evil_length)
+        print("stop evil?:", stopEvil)
         res = myMiner.evil51_mining(evil_head)
         if res == "receive new block":
+            print('received a good block')
             good_length += 1
             continue
-        if res == "receive evil block":
+        elif res == "receive evil block":
             evil_length += 1
             continue
         elif res == "error":
             continue
+        if stopEvil:
+            res = ""
+            print("leaving evil deeds...")
+            break
+        print("EVIL FOUND NEW BLOCK ", res.hash_header()[-6:])
         # except Exception as e:
         #     return {"Exception": str(e)}, 500
-        evil_head = hashlib.sha256(res.serialize().encode('utf-8')).hexdigest()
+        evil_head = res.hash_header() 
         evil_length = len(sutdcoin.create_chain_to_parent_block(res)) + 1
         if evil_length > good_length:
-            announce_51("stop")
-        announce(res, isEvil=True)
+            announce_51()
+        announce([res], isEvil=True)
 
-        # print("==========EVILBLOCKCHAIN===========")
-        # for k, v in sutdcoin.blockchain_graph.items():
-        #     print("-----")
-        #     print(k)
-        #     print("owner:", v["block"].miner_id)
-        #     print("height:", v['height'])
-        #     # print("block:", v['block'].get_header())
-        #     print("balance map:", v['balance_map'])
-        #     print("children:", v['children'])
-        # print("==================================")
-    evil_block_list = sutdcoin.create_chain_to_parent_block(res)
-    evil_block_list.insert(0, res)
-    if not stopEvil:
-        for block in reversed(evil_block_list):
-            announce(block)
+    if type(res) is not str:
+        evil_block_list = sutdcoin.create_chain_to_parent_block(res)
+        evil_block_list.insert(0, res)
+        if not stopEvil:
+            evil_block_list.reverse()
+            announce(evil_block_list)
     print("EVIL DEED IS DONE")
     while True:
         res = myMiner.start_mining()
@@ -244,7 +280,7 @@ def start_mining_51():
             continue
         # except Exception as e:
         #     return {"Exception": str(e)}, 500
-        announce(res)
+        announce([res])
 
 @app.route('/update')
 def update():
