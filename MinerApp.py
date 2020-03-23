@@ -21,6 +21,7 @@ FOUNDER = 'pawel'.encode('utf-8').hex()
 priv_key, pub_key = generateKeyPair()
 priv_key = priv_key.to_string().hex()
 pub_key = pub_key.to_string().hex()
+print(pub_key)
 
 
 sutdcoin = Blockchain()
@@ -97,6 +98,7 @@ def prepare_transaction_to_send():
     r = requests.post("http://localhost:{}/broadcast_transactions".format(SPVAPP_PORT), json=data)
     return "200" if r.ok else "500"
 
+
 @app.route('/new_transactions', methods=["POST"])
 def update_transaction_pool():
     res = json.loads(request.get_json())
@@ -108,7 +110,8 @@ def update_transaction_pool():
     timestamp = res["timestamp"]
     signature = res["signature"]
 
-    trans = Transaction(sender, receiver, amount, comment, timestamp, signature)
+    trans = Transaction(sender, receiver, amount,
+                        comment, timestamp, signature)
     if trans.validate_signature():
         myMiner.trans_pool.append(trans)
     else:
@@ -177,6 +180,8 @@ def announce(blocks, isEvil=False):
         chain_of_headers.append(head)
     d1 = {}
     d1['list_headers'] = chain_of_headers
+    d1['miner_port'] = PORT
+    print(d1)
     d1 = json.dumps(d1)
     r = requests.post("http://localhost:{}/headers".format(8080),json=d1)
     print("-----------------")
@@ -197,6 +202,7 @@ def stop51Attack():
         return 'success', 200
     else:
         return 'not ok', 400
+
 
 @app.route('/start_mining')
 def start_mining():
@@ -332,6 +338,40 @@ def start_mining_sequential():
 @app.route('/update')
 def update():
     update_from_blockchain = True
+
+
+# @app.route('/my_transactions'):
+# def verify_my_transaction:
+#     r = requests.get("http://localhost:{}/list_transactions/{}".format(CLIENT_PORT,pub_key))
+#     if r.ok:
+#         return 200
+#     else:
+#         return 400
+
+@app.route('/get_transactions', methods=['POST'])
+def listening_to_my_transactions():
+    user_pub_key = request.get_json()['pub']
+    print(user_pub_key)
+    # need to serialize transaction and then make on other side
+    transactions_list = []
+    data = {}
+    # print(sutdcoin.blockchain_graph)
+    last_block = sutdcoin.blockchain_graph[sutdcoin.longest_header]["block"]
+    longest_chain = sutdcoin.create_chain_to_parent_block(last_block)
+    longest_chain.insert(0,last_block)
+    #blockchain_graph_items = sutdcoin.blockchain_graph.items()
+    for block in longest_chain:
+        for trans in block.merkle_tree.past_transactions:
+            if trans.sender == user_pub_key or trans.receiver == user_pub_key:
+                nodes, neighbour, index = block.merkle_tree.get_min_nodes(
+                    trans)
+                transactions_list.append(
+                    [trans.serialize(), nodes, neighbour, index])
+
+    data['transaction_list'] = transactions_list
+    print("THE TRANSACTION LIST IS:", data)
+    data = json.dumps(data)
+    return data, 200
 
 
 if __name__ == '__main__':

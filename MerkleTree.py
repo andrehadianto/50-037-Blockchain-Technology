@@ -57,6 +57,8 @@ class MerkleTree():
     def get_min_nodes(self, transaction):
         idx = self.past_transactions.index(transaction)
         original_idx = idx
+        if len(self.merkle_chain)== 1:
+            return [],None,original_idx
         # get bottom up
         nodes = []
         if idx % 2 == 0:
