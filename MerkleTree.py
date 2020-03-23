@@ -11,7 +11,7 @@ class MerkleTree():
         self.root = None
 
     def add(self, transaction):
-        digest = hashlib.sha256(transaction.serialize()).hexdigest()
+        digest = hashlib.sha256(transaction.serialize().encode('utf-8')).hexdigest()
         self.past_transactions.append(transaction)
         self.past_hashes.append(digest)
         return digest
@@ -57,6 +57,8 @@ class MerkleTree():
     def get_min_nodes(self, transaction):
         idx = self.past_transactions.index(transaction)
         original_idx = idx
+        if len(self.merkle_chain)== 1:
+            return [],None,original_idx
         # get bottom up
         nodes = []
         if idx % 2 == 0:

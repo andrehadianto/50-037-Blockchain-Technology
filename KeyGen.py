@@ -7,7 +7,6 @@ def generateKeyPair():
     sender_vk = sender_sk.get_verifying_key()
     return sender_sk, sender_vk
 
-
 def generateSignature(message):
     sender_sk = ecdsa.SigningKey.generate()
     sender_vk = sender_sk.get_verifying_key()
