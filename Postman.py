@@ -54,11 +54,13 @@ def attack_51():
         # r = requests.get("http://localhost:{}/start_mining_51".format(7338))
         # print("The 51% miner is http://localhost:{}/start_mining_51".format(7338))
         # r = requests.get("http://localhost:{}/start_mining".format(5005))
-    print("The honest miner is http://localhost:{}/start_mining".format(5005))
+    # print("The honest miner is http://localhost:{}/start_mining".format(5005))
     t1 = Thread(target = requests.get,args=["http://localhost:{}/start_mining_51".format(7337)])
     t1.start()
-    t2 = Thread(target = requests.get("http://localhost:{}/start_mining".format(5005)),args=[json_to_send])
+    t2 = Thread(target = requests.get,args=["http://localhost:{}/start_mining_51".format(7338)])
     t2.start()
+    t3 = Thread(target = requests.get,args=["http://localhost:{}/start_mining".format(5005)])
+    t3.start()
 
 
 # attacks from previous week : selfish mining

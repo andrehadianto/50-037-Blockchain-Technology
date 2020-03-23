@@ -180,7 +180,7 @@ def announce(blocks, isEvil=False):
         chain_of_headers.append(head)
     d1 = {}
     d1['list_headers'] = chain_of_headers
-    d1['miner_port'] = PORT
+    d1['miner_port'] = args.port
     print(d1)
     d1 = json.dumps(d1)
     r = requests.post("http://localhost:{}/headers".format(8080),json=d1)
@@ -207,9 +207,9 @@ def stop51Attack():
 @app.route('/start_mining')
 def start_mining():
     myMiner.isMining = True
-    counter = 0
+    counter = 1
     while True:
-        if counter % 5:
+        if counter % 5 == 0:
             r = showGraph()
         counter += 1
         # try:
@@ -357,7 +357,7 @@ def listening_to_my_transactions():
     data = {}
     # print(sutdcoin.blockchain_graph)
     last_block = sutdcoin.blockchain_graph[sutdcoin.longest_header]["block"]
-    longest_chain = sutdcoin.create_chain_to_parent_block(last_block)
+    longest_chain = sutdcoin.createChainToParentBlock(last_block)
     longest_chain.insert(0,last_block)
     #blockchain_graph_items = sutdcoin.blockchain_graph.items()
     for block in longest_chain:
@@ -375,7 +375,5 @@ def listening_to_my_transactions():
 
 
 if __name__ == '__main__':
-
-
     myMiner = Miner(pub_key, sutdcoin)
     app.run(host="0.0.0.0", port=args.port, debug=True)
