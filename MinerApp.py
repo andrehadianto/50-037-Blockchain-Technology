@@ -251,6 +251,7 @@ def update():
     update_from_blockchain = True
 
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Configure miners")
     parser.add_argument('-p', '--port', type=int, required=True, help="PORT")

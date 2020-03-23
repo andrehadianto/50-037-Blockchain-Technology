@@ -45,10 +45,7 @@ class Blockchain:
         return block isValidated
         """
         # ## CHECK INCOMING BLOCK IS MINED AFTER THE PARENT BLOCK ##
-        # if block.get_header()["timestamp"] < self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
         #     print("block time : ",block.get_header()["timestamp"], "prev header time ", self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"])
-        #     return False
-        
         ## CHECK FOR DUPLICATE TRANSACTIONS ##
         for trans in block.merkle_tree.past_transactions:
             for block_ in self.create_chain_to_parent_block(block):
