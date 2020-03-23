@@ -13,7 +13,7 @@ class Miner:
         self.isMining = False
         self.naughty = naughty
 
-    def start_mining(self):
+    def startMining(self):
         ## RECEIVE NEW ANNOUNCEMENT ##
         print('===new block queue===')
         print([i[0].hash_header() for i in Miner.new_block_queue])
@@ -21,9 +21,9 @@ class Miner:
             to_hash = block[0].serialize()
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
             print(self.miner_id[-6:], ', hash of announced block', digest)
-            if self.blockchain.verify_pow(digest, block[1]):
-                if self.blockchain.validate_block(block[0]):
-                    self.blockchain.add_block(block[0])
+            if self.blockchain.verifyPow(digest, block[1]):
+                if self.blockchain.validateBlock(block[0]):
+                    self.blockchain.addBlock(block[0])
         Miner.new_block_queue = []
         print("-----------------")
         list_of_trans = []
@@ -55,9 +55,9 @@ class Miner:
             ## TRY ADDING BLOCK TO MINER'S BLOCKCHAIN ##
             # try:
             if counter < random.randint(500000,900000):
-                if self.blockchain.verify_pow(digest):
-                    if self.blockchain.validate_block(new_block):
-                        self.blockchain.add_block(new_block)
+                if self.blockchain.verifyPow(digest):
+                    if self.blockchain.validateBlock(new_block):
+                        self.blockchain.addBlock(new_block)
                         for trans in list_of_trans:
                             if trans in Miner.trans_pool:
                                 Miner.trans_pool.remove(trans)
@@ -66,7 +66,7 @@ class Miner:
             #     print("error: ", e)
             #     return "error"
 
-    def evil51_mining(self, evil_header):
+    def start51Mining(self, evil_header):
         ## RECEIVE NEW ANNOUNCEMENT ##
         print('===EVIL new block queue===')
         for block in Miner.new_block_queue:
@@ -74,20 +74,20 @@ class Miner:
             to_hash = block[0].serialize()
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
             print(self.miner_id[-6:], ', hash of announced block', digest)
-            if self.blockchain.verify_pow(digest, block[1]):
-                if self.blockchain.validate_block(block[0]):
-                    self.blockchain.add_block(block[0])
+            if self.blockchain.verifyPow(digest, block[1]):
+                if self.blockchain.validateBlock(block[0]):
+                    self.blockchain.addBlock(block[0])
             if block[2] == "evil":
                 print("received block is evil")
-                evil_chain_length = len(self.blockchain.create_chain_to_parent_block(block[0])) + 1
+                evil_chain_length = len(self.blockchain.createChainToParentBlock(block[0])) + 1
                 print(evil_chain_length)
         Miner.new_block_queue = []
             
         print("-----------------")
 
         try:
-            print("length of chain from the argument",len(self.blockchain.create_chain_to_parent_block(self.blockchain.blockchain_graph[evil_header]["block"]) + 1))
-            if evil_chain_length > len(self.blockchain.create_chain_to_parent_block(self.blockchain.blockchain_graph[evil_header]["block"]) + 1):
+            print("length of chain from the argument",len(self.blockchain.createChainToParentBlock(self.blockchain.blockchain_graph[evil_header]["block"]) + 1))
+            if evil_chain_length > len(self.blockchain.createChainToParentBlock(self.blockchain.blockchain_graph[evil_header]["block"]) + 1):
                 self.blockchain.longest_header = digest
             else:
                 self.blockchain.longest_header = evil_header
@@ -124,9 +124,9 @@ class Miner:
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
             ## TRY ADDING BLOCK TO MINER'S BLOCKCHAIN ##
             # try:
-            if self.blockchain.verify_pow(digest) and self.blockchain.validate_block(new_block):
-                self.blockchain.add_block(new_block)
-                print(len(self.blockchain.create_chain_to_parent_block(new_block))+1)
+            if self.blockchain.verifyPow(digest) and self.blockchain.validateBlock(new_block):
+                self.blockchain.addBlock(new_block)
+                print(len(self.blockchain.createChainToParentBlock(new_block))+1)
                 for trans in list_of_trans:
                     if trans in Miner.trans_pool:
                         Miner.trans_pool.remove(trans)

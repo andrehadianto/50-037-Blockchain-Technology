@@ -38,7 +38,7 @@ def createTransaction(sender, receiver, amount, comment, priv_key):
     return transaction
 
 @app.route('/headers',methods = ["POST"])
-def get_headers():
+def getHeaders():
     global list_of_headers
     #wait for miners to send the longest chain
     res = json.loads(request.get_json())

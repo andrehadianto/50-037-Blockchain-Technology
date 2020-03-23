@@ -10,14 +10,14 @@ class Blockchain:
     MIN_TARGET = 6.0147377111333645e+70
 
     def __init__(self):
-        self.TARGET = 1.188913362042147e+71
+        self.TARGET = 5.188913362042147e+71
         self.blockchain_graph = {}
         self.longest_chain = []
         self.longest_header = None
-        self.generate_genesis_block()
-        self.old_target = 1.188913362042147e+71
+        self.generateGenesisBlock()
+        self.old_target = 5.188913362042147e+71
 
-    def generate_genesis_block(self):
+    def generateGenesisBlock(self):
         """
         generating the genesis block
         """
@@ -32,14 +32,14 @@ class Blockchain:
         }
         self.longest_header = digest
 
-    def verify_pow(self, digest, block_target=0):
+    def verifyPow(self, digest, block_target=0):
         if block_target == 0:
             block_target = self.TARGET
         if int('0x'+digest, 0) <= block_target:
             return True
         return False
 
-    def validate_block(self, block):
+    def validateBlock(self, block):
         """
         ensure proof of work is valid, transactions are new, timestamp
         return block isValidated
@@ -49,11 +49,11 @@ class Blockchain:
         #     print('timeerror')
         #     return False
         ## CHECK FOR DUPLICATE CHILDREN ##
-        if block.hash_header() in self.blockchain_graph[block.get_header()['prev_header']["children"]]:
+        if block.hash_header() in self.blockchain_graph:
             return False
         ## CHECK FOR DUPLICATE TRANSACTIONS ##
         for trans in block.merkle_tree.past_transactions:
-            for block_ in self.create_chain_to_parent_block(block):
+            for block_ in self.createChainToParentBlock(block):
                 for trans_ in block_.merkle_tree.past_transactions:
                     if trans.serialize() == trans_.serialize():
                         print('repeated transactions')
@@ -62,10 +62,10 @@ class Blockchain:
         
         return True
 
-    def get_node_balance_map(self, digest):
+    def getNodeBalanceMap(self, digest):
         return self.blockchain_graph[digest]["balance_map"]
 
-    def add_block(self, block):
+    def addBlock(self, block):
         digest = block.hash_header()
         prev_level = self.blockchain_graph[block.get_header()[
             "prev_header"]]["height"]
@@ -73,7 +73,7 @@ class Blockchain:
             digest)  # updating children of the parent node
         ## UPDATE BALANCE MAP ##
         new_balance_map = copy.deepcopy(
-            self.get_node_balance_map(block.get_header()["prev_header"]))
+            self.getNodeBalanceMap(block.get_header()["prev_header"]))
         new_balance_map[block.miner_id] = new_balance_map.get(
             block.miner_id, 0) + 100  # change to coins per block
         for txn in block.merkle_tree.past_transactions:  # updating balance from transaction
@@ -103,7 +103,7 @@ class Blockchain:
         self.resolve2()
         
 
-    def create_chain_to_parent_block(self, block):
+    def createChainToParentBlock(self, block):
         block_list = []
         parent_node = self.blockchain_graph[block.get_header()[
             "prev_header"]]
