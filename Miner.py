@@ -85,8 +85,8 @@ class Miner:
         print("-----------------")
 
         try:
-            print("length of chain from the argument",len(self.blockchain.createChainToParentBlock(self.blockchain.blockchain_graph[evil_header]["block"]) + 1))
-            if evil_chain_length > len(self.blockchain.createChainToParentBlock(self.blockchain.blockchain_graph[evil_header]["block"]) + 1):
+            if evil_chain_length > len(self.blockchain.createChainToParentBlock(self.blockchain.blockchain_graph[evil_header]
+                    ["block"]) + 1):
                 self.blockchain.longest_header = digest
             else:
                 self.blockchain.longest_header = evil_header

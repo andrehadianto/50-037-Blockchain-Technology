@@ -265,9 +265,9 @@ def start51Mining():
         #     return {"Exception": str(e)}, 500
         evil_head = res.hash_header() 
         evil_length = len(sutdcoin.createChainToParentBlock(res)) + 1
-        if evil_length > good_length:
-            stop51Attack()
         announce([res], isEvil=True)
+        if evil_length > good_length+2:
+            stop51Attack()
 
     if type(res) is not str:
         evil_block_list = sutdcoin.createChainToParentBlock(res)
@@ -308,6 +308,7 @@ def start_selfish_mining():
                     list_of_priv_blocks.append(res)
                     if len(list_of_priv_blocks)>=2:
                         announce(list_of_priv_blocks)
+                        list_of_priv_blocks = []
                         print("SELFISH MINING SUCCESS")
                         r = showGraph()
 
