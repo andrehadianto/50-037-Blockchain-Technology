@@ -15,7 +15,7 @@ import hashlib
 app = Flask(__name__)
 
 FOUNDER = 'pawel'.encode('utf-8').hex()
-PORT_LIST = [5005, 7337, 7338]
+PORT_LIST = [5004,5005]
 PORT_LIST_51 = [7337, 7338]
 CLIENT_PORT = 8080
 
@@ -281,6 +281,68 @@ def start_mining_51():
         # except Exception as e:
         #     return {"Exception": str(e)}, 500
         announce([res])
+
+
+@app.route('/start_selfish_mining')
+def start_selfish_mining():
+    myMiner.isMining = True
+    list_of_priv_blocks = [] ## the lead, and not announced chain branch
+    while True: 
+        # show that selfish miner has worse computational power
+        time.sleep(2)
+        res = myMiner.start_mining()
+        if res == "receive new block" or myMiner.new_block_queue:
+            # continue mining on public blockchain
+            print('selfish recieve new block')
+            continue
+        else:
+            while(not myMiner.new_block_queue):
+                list_of_priv_blocks.append(res)
+                res = myMiner.start_mining()
+                if len(list_of_priv_blocks)>=2:
+                    for blk in list_of_priv_blocks:
+                        print("SELFISH MINING SUCCESS, ANNOUNCING NOW")
+                        announce(blk)
+        for k, v in sutdcoin.blockchain_graph.items():
+            print("-----")
+            print(k)
+            print("owner:", v["block"].miner_id)
+            print("height:", v['height'])
+            # print("block:", v['block'].get_header())
+            # print("balance map:", v['balance_map'])
+            print("children:", v['children'])
+        print("==================================")
+
+
+                             
+@app.route('/start_mining_sequential')
+def start_mining_sequential():
+
+    myMiner.isMining = True
+    # try:
+    res = myMiner.start_mining()
+    if res == "receive new block":
+        return "new", 200
+    elif res == "error":
+        return "error", 500
+    # except Exception as e:
+    #     return {"Exception": str(e)}, 500
+    announce(res)
+    print("==============BLOCKCHAIN===========")
+    for k, v in sutdcoin.blockchain_graph.items():
+        print("-----")
+        print(k)
+        print("owner:", v["block"].miner_id)
+        print("height:", v['height'])
+        # print("block:", v['block'].get_header())
+        # print("balance map:", v['balance_map'])
+        print("children:", v['children'])
+    print("==================================")
+    return "success", 200
+
+
+
+
 
 @app.route('/update')
 def update():

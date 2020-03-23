@@ -134,3 +134,9 @@ class Miner:
             # except Exception as e:
             #     print("error: ", e)
             #     return "error"
+
+
+
+
+
+
