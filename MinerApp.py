@@ -266,22 +266,18 @@ def listening_to_my_transactions():
     transactions_list = []
     data = {}
     # print(sutdcoin.blockchain_graph)
-    blockchain_graph_items = sutdcoin.blockchain_graph.items()
-    for k, v in blockchain_graph_items:
-        for trans in v['block'].merkle_tree.past_transactions:
+    last_block = sutdcoin.blockchain_graph[sutdcoin.longest_header]["block"]
+    longest_chain = sutdcoin.create_chain_to_parent_block(last_block)
+    longest_chain.insert(0,last_block)
+    #blockchain_graph_items = sutdcoin.blockchain_graph.items()
+    for block in longest_chain:
+        for trans in block.merkle_tree.past_transactions:
             if trans.sender == user_pub_key or trans.receiver == user_pub_key:
-                nodes, neighbour, index = v['block'].merkle_tree.get_min_nodes(
+                nodes, neighbour, index = block.merkle_tree.get_min_nodes(
                     trans)
                 transactions_list.append(
                     [trans.serialize(), nodes, neighbour, index])
 
-    #     print("-----")
-    #     print(k) #header
-    #     print("height:", v['height'])
-    #     # print("block:", v['block'].get_header())
-    #     print("balance map:", v['balance_map'])
-    #     print("children:", v['children'])
-    # print("==================================")
     data['transaction_list'] = transactions_list
     print("THE TRANSACTION LIST IS:", data)
     data = json.dumps(data)
