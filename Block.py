@@ -5,7 +5,7 @@ import hashlib
 import json
 
 class Block:
-    def __init__(self, transactions, prev_header, miner_id, nonce=None, timestamp=int(time.time())):
+    def __init__(self, transactions, prev_header, miner_id, nonce=None, timestamp=int(time.time())/2):
         self.merkle_tree = MerkleTree()
         for trans in transactions:
             self.merkle_tree.add(trans)

@@ -11,7 +11,7 @@ from KeyGen import generateKeyPair
 
 class Transaction(object):
 
-    def __init__(self, sender, receiver, amount, comment, timestamp=int(time.time()), signature=0):
+    def __init__(self, sender, receiver, amount, comment, timestamp=int(time.time())/2, signature=0):
         self.sender = sender
         self.receiver = receiver
         self.amount = amount

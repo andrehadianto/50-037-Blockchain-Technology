@@ -7,15 +7,15 @@ import copy
 
 
 class Blockchain:
-    MIN_TARGET = 1.0147377111333645e+71
+    MIN_TARGET = 6.0147377111333645e+70
 
     def __init__(self):
-        self.TARGET = 6.488913362042147e+71
+        self.TARGET = 1.188913362042147e+71
         self.blockchain_graph = {}
         self.longest_chain = []
         self.longest_header = None
         self.generate_genesis_block()
-        self.old_target = None
+        self.old_target = 1.188913362042147e+71
 
     def generate_genesis_block(self):
         """
@@ -32,7 +32,7 @@ class Blockchain:
         }
         self.longest_header = digest
 
-    def verify_pow(self, digest,block_target = 0):
+    def verify_pow(self, digest, block_target=0):
         if block_target == 0:
             block_target = self.TARGET
         if int('0x'+digest, 0) <= block_target:
@@ -45,18 +45,16 @@ class Blockchain:
         return block isValidated
         """
         # ## CHECK INCOMING BLOCK IS MINED AFTER THE PARENT BLOCK ##
-        # if block.get_header()["timestamp"] < self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
-        #     print("block time : ",block.get_header()["timestamp"], "prev header time ", self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"])
+        # if block.get_header()["timestamp"] <= self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
+        #     print('timeerror')
         #     return False
-        
         ## CHECK FOR DUPLICATE TRANSACTIONS ##
         for trans in block.merkle_tree.past_transactions:
             for block_ in self.create_chain_to_parent_block(block):
                 for trans_ in block_.merkle_tree.past_transactions:
                     if trans.serialize() == trans_.serialize():
+                        print('repeated transactions')
                         return False
-        if block.hash_header() in self.blockchain_graph:
-            return False
         return True
 
     def get_node_balance_map(self, digest):
@@ -82,19 +80,18 @@ class Blockchain:
             if bal < 0:
                 return "Insufficient balance"
         ## UPDATE DIFFICULTY ##
-        expected = 3.0
-        time_diff = block.get_header()["timestamp"] - self.blockchain_graph[block.get_header()[
-            "prev_header"]]["block"].get_header()["timestamp"]
-        ratio = float(time_diff/expected)
-        if ratio > 2.0:
-            ratio = 1.5
-        if ratio < 0.9:
-            ratio = 0.9
-        self.old_target = self.TARGET
-        self.TARGET *= ratio
-        # print("ratio is : ", ratio)
-        if self.TARGET < Blockchain.MIN_TARGET:
-            self.TARGET = Blockchain.MIN_TARGET
+        # expected = 3.0
+        # time_diff = block.get_header()["timestamp"] - self.blockchain_graph[block.get_header()[
+        #     "prev_header"]]["block"].get_header()["timestamp"]
+        # ratio = float(time_diff/expected)
+        # if ratio > 1.5:
+        #     ratio = 1.5
+        # if ratio < 0.7:
+        #     ratio = 0.7
+        # self.old_target = self.TARGET
+        # self.TARGET *= ratio
+        # if self.TARGET < Blockchain.MIN_TARGET:
+        #     self.TARGET = Blockchain.MIN_TARGET
         ## UPDATE BLOCKCHAIN ##
         self.blockchain_graph[digest] = {"children": [], "height": prev_level +
                                          1, "block": block, "balance_map": new_balance_map}  # creating new node
@@ -137,9 +134,8 @@ class Blockchain:
         highest_level_n = 0
         highest_level_n_digest = []
         for digest, node in self.blockchain_graph.items():  # finding the highest level_n
-            if len(node["children"]) > 1:
-                pass
-                # print('Fork is found...')
+            # if len(node["children"]) > 1:
+            #     print('Fork is found...')
             # check transaction
             if node["height"] > highest_level_n:
                 highest_level_n_digest = []  # getting nodes with highest level_n
@@ -151,4 +147,6 @@ class Blockchain:
                 continue
         self.longest_header = highest_level_n_digest[random.randint(
             0, len(highest_level_n_digest) - 1)]  # return a random header
+        print("==RESOLVE==")
         print("The longest header is now ", self.longest_header)
+        print("-----------")
