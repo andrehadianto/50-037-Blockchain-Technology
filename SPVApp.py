@@ -13,6 +13,7 @@ MINERS_PORT_LIST = [7337, 7338,5005]
 
 list_of_headers = []
 longest_miner = 0
+txn_and_proofs = {}
 
 @app.route('/broadcast_transactions', methods=["POST"])
 def broadcast_transactions():
@@ -64,8 +65,8 @@ def get_related_transactions():
     print("THE TRANSACTION LIST FROM MINER:" , res)
     transaction_list = []
     # After u get the txn params here, have to initialize a new txn
-    for trans in res['transaction_list']:
-        trans = json.loads(trans)
+    for trans_ in res['transaction_list']:
+        trans = json.loads(trans_[0])
         print("SERIALIZED TRANSACTION FROM GET: ",transaction_list)
         sender = trans["sender"]
         receiver = trans["receiver"]
@@ -75,39 +76,46 @@ def get_related_transactions():
         signature = trans["signature"]
         t = Transaction(sender, receiver, amount, comment, timestamp, signature)
         transaction_list.append(t)
+        
+        txn_and_proofs[data['pub']] = txn_and_proofs.get(data['pub'],[]) 
+        txn_and_proofs[data['pub']].append(trans, trans_[1:])
 
     # this should get test
 
     return 'success',200
-     
-def verify_transactions(txn):
-    timestamp = txn.timestamp
-    for header in list_of_headers:
-        if timestamp > i["timestamp"] :
-            continue
-        else:
-            nodes,neighbour,idx = call_miner(header,txn)
-            # call a miner and ask him to return me the outputs of block.merkle_tree.get_min_nodes()
-            #reconstruct tree
-            digest = hashlib.sha256(transaction).hexdigest()
-            if idx % 2 == 0:
-            # the node is on the left
-                to_hash = str(digest) + str(neighbour)
-                digest = hashlib.sha256(to_hash.encode()).hexdigest()
-            else:
-                # node is on the right
-                to_hash = str(neighbour) + str(digest)
-                digest = hashlib.sha256(to_hash.encode()).hexdigest()
-            for i in nodes:
-                if i[1] == "Left":
-                    # my node is right, my neighbour is left. Left goes first
-                    to_hash = str(i[0]) + str(digest)
-                    digest = hashlib.sha256(to_hash.encode()).hexdigest()
+@app.route('/verify',methods = ['POST'])
+def verify_transactions():
+    txn = request.get_json()
+    for txns in txn_and_proofs[txn['sender']].values():
+        if txn == txn[0]:
+            #hash the rest and perform check
+            timestamp = txn['timestamp']
+            for header in list_of_headers:
+                if timestamp > i["timestamp"] :
+                    continue
                 else:
-                    to_hash = str(digest) + str(i[0])
-                    digest = hashlib.sha256(to_hash.encode()).hexdigest()
-            if digest == i["root"]:
-                return True
+                    nodes,neighbour,idx = txn[1],txn[2],txn[3]
+                    # call a miner and ask him to return me the outputs of block.merkle_tree.get_min_nodes()
+                    #reconstruct tree
+                    digest = hashlib.sha256(transaction).hexdigest()
+                    if idx % 2 == 0:
+                    # the node is on the left
+                        to_hash = str(digest) + str(neighbour)
+                        digest = hashlib.sha256(to_hash.encode()).hexdigest()
+                    else:
+                        # node is on the right
+                        to_hash = str(neighbour) + str(digest)
+                        digest = hashlib.sha256(to_hash.encode()).hexdigest()
+                    for i in nodes:
+                        if i[1] == "Left":
+                            # my node is right, my neighbour is left. Left goes first
+                            to_hash = str(i[0]) + str(digest)
+                            digest = hashlib.sha256(to_hash.encode()).hexdigest()
+                        else:
+                            to_hash = str(digest) + str(i[0])
+                            digest = hashlib.sha256(to_hash.encode()).hexdigest()
+                    if digest == i["root"]:
+                        return True
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)

@@ -257,7 +257,9 @@ def listening_to_my_transactions():
     for k, v in blockchain_graph_items:
         for trans in v['block'].merkle_tree.past_transactions:
             if trans.sender == user_pub_key or trans.receiver == user_pub_key:
-                transactions_list.append(trans.serialize())
+                nodes,neighbour,index = v['block'].merkle_tree.get_min_nodes()
+                transactions_list.append(trans.serialize(),nodes,neighbour,index)
+                
     #     print("-----")
     #     print(k) #header
     #     print("height:", v['height'])
