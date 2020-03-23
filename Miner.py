@@ -94,8 +94,6 @@ class Miner:
         except:
             self.blockchain.longest_header = evil_header
 
-        # if self.blockchain.blockchain_graph[self.blockchain.longest_header]["block"].miner_id = self.
-
         list_of_trans = []
         bal_map = self.blockchain.blockchain_graph[self.blockchain.longest_header]["balance_map"]
         ## COLLECT VALID TRANSACTIONS ##

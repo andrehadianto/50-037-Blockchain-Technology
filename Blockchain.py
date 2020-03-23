@@ -48,6 +48,9 @@ class Blockchain:
         # if block.get_header()["timestamp"] <= self.blockchain_graph[block.get_header()["prev_header"]]["block"].get_header()["timestamp"]:
         #     print('timeerror')
         #     return False
+        ## CHECK FOR DUPLICATE CHILDREN ##
+        if block.hash_header() in self.blockchain_graph[block.get_header()['prev_header']["children"]]:
+            return False
         ## CHECK FOR DUPLICATE TRANSACTIONS ##
         for trans in block.merkle_tree.past_transactions:
             for block_ in self.create_chain_to_parent_block(block):
@@ -55,6 +58,8 @@ class Blockchain:
                     if trans.serialize() == trans_.serialize():
                         print('repeated transactions')
                         return False
+                
+        
         return True
 
     def get_node_balance_map(self, digest):
