@@ -15,7 +15,7 @@ import hashlib
 app = Flask(__name__)
 
 FOUNDER = 'pawel'.encode('utf-8').hex()
-PORT_LIST = [7337, 7338, 5005]
+PORT_LIST = [5004, 5005]
 PORT_LIST_51 = [7337, 7338]
 CLIENT_PORT = 8080
 
@@ -28,6 +28,7 @@ print(pub_key)
 sutdcoin = Blockchain()
 print('Genesis block generated')
 print(sutdcoin.blockchain_graph)
+
 
 @app.route('/show_graph')
 def show_graph():
@@ -43,6 +44,7 @@ def show_graph():
     print("==================================")
     return "200"
 
+
 @app.route('/create_transaction1', methods=["POST"])
 def prepare_transaction_to_send():
     res = request.get_json()
@@ -57,8 +59,10 @@ def prepare_transaction_to_send():
     data["amount"] = amount
     data["comment"] = comment
     data = json.dumps(data)
-    r = requests.post("http://localhost:{}/broadcast_transactions".format(CLIENT_PORT), json=data)
+    r = requests.post(
+        "http://localhost:{}/broadcast_transactions".format(CLIENT_PORT), json=data)
     return "200" if r.ok else "500"
+
 
 @app.route('/new_transactions', methods=["POST"])
 def update_transaction_pool():
@@ -71,12 +75,14 @@ def update_transaction_pool():
     timestamp = res["timestamp"]
     signature = res["signature"]
 
-    trans = Transaction(sender, receiver, amount, comment, timestamp, signature)
+    trans = Transaction(sender, receiver, amount,
+                        comment, timestamp, signature)
     if trans.validate_signature():
         myMiner.trans_pool.append(trans)
     else:
         return "500"
     return "200"
+
 
 @app.route('/listen', methods=["POST"])
 def listen_to_broadcast():
@@ -87,11 +93,12 @@ def listen_to_broadcast():
         transaction_list.append(Transaction.deserialize(trans))
     block = Block(transaction_list, res['header']
                   ['prev_header'], res['miner_id'], res['header']['nonce'], res['header']['timestamp'])
-    myMiner.new_block_queue.append([block,difficulty])
+    myMiner.new_block_queue.append([block, difficulty])
     return 'success', 200
     # except Exception as e:
     #     return {"Exception": str(e)}, 500
 #     params = request.get_json()
+
 
 def announce(block):
     for port in PORT_LIST:
@@ -106,7 +113,8 @@ def announce(block):
             for trans in block.merkle_tree.past_transactions:
                 transactions_to_send.append(trans.serialize())
             data['transactions'] = transactions_to_send
-            data['miner_id'] = myMiner.miner_id # to get the longest one, used by /headers endpoint
+            # to get the longest one, used by /headers endpoint
+            data['miner_id'] = myMiner.miner_id
 
             form = json.dumps(data)
             r = requests.post(
@@ -123,13 +131,16 @@ def announce(block):
     d1 = {}
     d1['list_headers'] = chain_of_headers
     d1['miner_port'] = PORT
+    print(d1)
     d1 = json.dumps(d1)
-    r = requests.post("http://localhost:{}/headers".format(8080),json=d1)
-        
+
+    r = requests.post("http://localhost:{}/headers".format(8080), json=d1)
+
     if r.ok:
         return 'success', 200
     else:
         return 'not ok', 400
+
 
 def announce_51(block):
     for port in PORT_LIST_51:
@@ -156,10 +167,11 @@ def announce_51(block):
     else:
         return 'not ok', 400
 
+
 @app.route('/start_mining')
 def start_mining():
     myMiner.isMining = True
-    time.sleep(2)
+    time.sleep(5)
     while True:
         time.sleep(0.5)
         # try:
@@ -181,6 +193,7 @@ def start_mining():
         #     print("balance map:", v['balance_map'])
         #     print("children:", v['children'])
         # print("==================================")
+
 
 @app.route('/start_mining_51')
 def start_mining_51():
@@ -232,6 +245,7 @@ def start_mining_51():
         announce(block)
     print("EVIL DEED IS DONE")
 
+
 @app.route('/update')
 def update():
     update_from_blockchain = True
@@ -245,7 +259,7 @@ def update():
 #     else:
 #         return 400
 
-@app.route('/get_transactions',methods=['POST'])
+@app.route('/get_transactions', methods=['POST'])
 def listening_to_my_transactions():
     user_pub_key = request.get_json()['pub']
     print(user_pub_key)
@@ -257,9 +271,11 @@ def listening_to_my_transactions():
     for k, v in blockchain_graph_items:
         for trans in v['block'].merkle_tree.past_transactions:
             if trans.sender == user_pub_key or trans.receiver == user_pub_key:
-                nodes,neighbour,index = v['block'].merkle_tree.get_min_nodes(trans)
-                transactions_list.append(trans.serialize(),nodes,neighbour,index)
-                
+                nodes, neighbour, index = v['block'].merkle_tree.get_min_nodes(
+                    trans)
+                transactions_list.append(
+                    [trans.serialize(), nodes, neighbour, index])
+
     #     print("-----")
     #     print(k) #header
     #     print("height:", v['height'])
@@ -268,18 +284,16 @@ def listening_to_my_transactions():
     #     print("children:", v['children'])
     # print("==================================")
     data['transaction_list'] = transactions_list
-    print("THE TRANSACTION LIST IS:" ,data)
+    print("THE TRANSACTION LIST IS:", data)
     data = json.dumps(data)
     return data, 200
-
-
-
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Configure miners")
     parser.add_argument('-p', '--port', type=int, required=True, help="PORT")
-    parser.add_argument('-e', '--evil', type=bool, required=False, help="51% Attack")
+    parser.add_argument('-e', '--evil', type=bool,
+                        required=False, help="51% Attack")
     args = parser.parse_args()
 
     myMiner = Miner(pub_key, sutdcoin)
