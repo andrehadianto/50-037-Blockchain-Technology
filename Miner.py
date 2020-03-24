@@ -17,6 +17,7 @@ class Miner:
         ## RECEIVE NEW ANNOUNCEMENT ##
         print('===new block queue===')
         print([i[0].hash_header() for i in Miner.new_block_queue])
+
         for block in Miner.new_block_queue:
             to_hash = block[0].serialize()
             digest = hashlib.sha256(to_hash.encode('utf-8')).hexdigest()
@@ -25,6 +26,7 @@ class Miner:
                 if self.blockchain.validateBlock(block[0]):
                     self.blockchain.addBlock(block[0])
         Miner.new_block_queue = []
+
         print("-----------------")
         list_of_trans = []
         bal_map = self.blockchain.blockchain_graph[self.blockchain.longest_header]["balance_map"]
