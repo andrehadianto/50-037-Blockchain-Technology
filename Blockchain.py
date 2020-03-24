@@ -15,7 +15,7 @@ class Blockchain:
         self.longest_chain = []
         self.longest_header = None
         self.generateGenesisBlock()
-        self.old_target = 2.188913362042147e+71
+        self.old_target = self.TARGET
 
     def generateGenesisBlock(self):
         """
@@ -84,18 +84,18 @@ class Blockchain:
             if bal < 0:
                 return "Insufficient balance"
         ## UPDATE DIFFICULTY ##
-        # expected = 3.0
-        # time_diff = block.get_header()["timestamp"] - self.blockchain_graph[block.get_header()[
-        #     "prev_header"]]["block"].get_header()["timestamp"]
-        # ratio = float(time_diff/expected)
-        # if ratio > 1.5:
-        #     ratio = 1.5
-        # if ratio < 0.7:
-        #     ratio = 0.7
-        # self.old_target = self.TARGET
-        # self.TARGET *= ratio
-        # if self.TARGET < Blockchain.MIN_TARGET:
-        #     self.TARGET = Blockchain.MIN_TARGET
+        expected = 3.0
+        time_diff = block.get_header()["timestamp"] - self.blockchain_graph[block.get_header()[
+            "prev_header"]]["block"].get_header()["timestamp"]
+        ratio = float(time_diff/expected)
+        if ratio > 1.5:
+            ratio = 1.5
+        if ratio < 0.95:
+            ratio = 0.95
+        self.old_target = self.TARGET
+        self.TARGET *= ratio
+        if self.TARGET < Blockchain.MIN_TARGET:
+            self.TARGET = Blockchain.MIN_TARGET
         ## UPDATE BLOCKCHAIN ##
         self.blockchain_graph[digest] = {"children": [], "height": prev_level +
                                          1, "block": block, "balance_map": new_balance_map}  # creating new node

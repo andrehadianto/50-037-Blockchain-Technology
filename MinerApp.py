@@ -181,7 +181,6 @@ def announce(blocks, isEvil=False):
     d1 = {}
     d1['list_headers'] = chain_of_headers
     d1['miner_port'] = args.port
-    print(d1)
     d1 = json.dumps(d1)
     r = requests.post("http://localhost:{}/headers".format(8080),json=d1)
     print("-----------------")
@@ -212,14 +211,14 @@ def start_mining():
         if counter % 5 == 0:
             r = showGraph()
         counter += 1
-        # try:
-        res = myMiner.startMining()
-        if res == "receive new block":
-            continue
-        elif res == "error":
-            continue
-        # except Exception as e:
-        #     return {"Exception": str(e)}, 500
+        try:
+            res = myMiner.startMining()
+            if res == "receive new block":
+                continue
+            elif res == "error":
+                continue
+        except Exception as e:
+            return {"Exception": str(e)}, 500
         announce([res])
         
 @app.route('/start_mining_51')
